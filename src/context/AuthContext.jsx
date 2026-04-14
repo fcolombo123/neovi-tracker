@@ -9,21 +9,43 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch profile from profiles table
-  async function fetchProfile(userId) {
+  // Fetch or create profile from profiles table
+  async function ensureProfile(authUser) {
+    if (!authUser) return null;
     try {
+      // Try to fetch existing profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .single();
-      if (error) {
-        console.warn('Could not fetch profile:', error.message);
-        return null;
+
+      if (data) return data;
+
+      // Profile doesn't exist — create one
+      if (error && error.code === 'PGRST116') {
+        const { data: newProfile, error: insertErr } = await supabase
+          .from('profiles')
+          .insert({
+            id: authUser.id,
+            email: authUser.email,
+            full_name: authUser.user_metadata?.full_name || '',
+            role: 'pm',
+          })
+          .select()
+          .single();
+
+        if (insertErr) {
+          console.warn('Could not create profile:', insertErr.message);
+          return null;
+        }
+        return newProfile;
       }
-      return data;
+
+      console.warn('Could not fetch profile:', error?.message);
+      return null;
     } catch (err) {
-      console.warn('Profile fetch failed:', err);
+      console.warn('Profile fetch/create failed:', err);
       return null;
     }
   }
@@ -34,7 +56,7 @@ export function AuthProvider({ children }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        fetchProfile(s.user.id).then(setProfile);
+        ensureProfile(s.user).then(setProfile);
       }
       setLoading(false);
     });
@@ -45,7 +67,7 @@ export function AuthProvider({ children }) {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
-          fetchProfile(s.user.id).then(setProfile);
+          ensureProfile(s.user).then(setProfile);
         } else {
           setProfile(null);
         }
@@ -58,7 +80,11 @@ export function AuthProvider({ children }) {
 
   // Magic link sign in
   async function signIn(email) {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const redirectUrl = window.location.origin + (import.meta.env.BASE_URL || '/');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectUrl }
+    });
     if (error) throw error;
   }
 
