@@ -1,0 +1,3232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neovi — Project Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FFFFFF;--bg2:#F7F4F0;--bg3:#F0EBE3;
+  --text:#1C1916;--text2:#7A7268;--text3:#A89E94;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.16);
+  --accent:#C4A882;--accent-dark:#9E7D5A;--accent-bg:rgba(196,168,130,0.12);
+  --green:#5A8C5E;--green-bg:rgba(90,140,94,0.12);--green-text:#3A6B3E;
+  --amber-bg:rgba(196,168,130,0.18);--amber-text:#7A5C3A;
+  --red:#C47A72;--red-bg:rgba(196,122,114,0.12);--red-text:#8C3F38;--red-border:rgba(196,122,114,0.28);
+  --blue-bg:rgba(55,138,221,0.1);--blue-text:#185FA5;
+  --r:8px;--rl:12px;
+}
+[data-theme="dark"]{
+  --bg:#1E1B18;--bg2:#252220;--bg3:#2C2926;
+  --text:#F0EDE8;--text2:#9A9088;--text3:#6A6058;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --accent:#C4A882;--accent-dark:#D4B892;--accent-bg:rgba(196,168,130,0.14);
+  --green:#5A9C6E;--green-bg:rgba(90,156,110,0.14);--green-text:#7DC494;
+  --amber-bg:rgba(196,168,130,0.16);--amber-text:#D4A858;
+  --red:#D47870;--red-bg:rgba(212,120,112,0.14);--red-text:#F09088;--red-border:rgba(212,120,112,0.3);
+  --blue-bg:rgba(55,138,221,0.14);--blue-text:#6AACF0;
+}
+/* Role banner */
+.role-banner{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r);font-size:12px;margin-bottom:14px;border:0.5px solid var(--border2)}
+/* Settings modal */
+.settings-panel{position:fixed;top:0;right:0;width:300px;height:100vh;background:var(--bg);border-left:0.5px solid var(--border2);z-index:400;transform:translateX(100%);transition:transform .2s ease;padding:24px 20px;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.12)}
+.settings-panel.open{transform:translateX(0)}
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:399}
+.settings-overlay.open{display:block}
+.settings-section{margin-bottom:24px}
+.settings-section-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:10px}
+.role-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;margin-bottom:6px;transition:all .1s;background:var(--bg2)}
+.role-pill:hover{border-color:var(--accent)}
+.role-pill.active{border-color:var(--accent);background:var(--accent-bg)}
+.role-pill .role-name{font-size:13px;font-weight:500;flex:1}
+.role-pill .role-desc{font-size:10px;color:var(--text2)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.toggle-track{width:36px;height:20px;border-radius:10px;background:var(--bg3);border:0.5px solid var(--border2);position:relative;cursor:pointer;transition:background .15s}
+.toggle-track.on{background:var(--accent)}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle-track.on .toggle-thumb{left:19px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;font-size:14px}
+.app{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:2px}
+h1{font-size:22px;font-weight:600}
+
+/* Metrics */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.mc{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.mc .lbl{font-size:11px;color:var(--text2);margin-bottom:3px}
+.mc .val{font-size:20px;font-weight:600}
+.mc .val.danger{color:#8C3F38}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;padding:0 4px}
+.tab{background:none;border:none;padding:10px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+
+/* Two col */
+.two-col{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+
+/* Project cards */
+.pcard{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.pcard:hover{border-color:var(--border2)}
+.pcard.sel{border-color:var(--accent);border-width:1.5px}
+.pcard .pname{font-size:13px;font-weight:500;margin-bottom:2px}
+.pcard .psub{font-size:11px;color:var(--text2);margin-bottom:6px}
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-bar{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px}
+.prog-lbl{font-size:11px;color:var(--text2);white-space:nowrap}
+
+/* Badges */
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px}
+.b-success{background:var(--green-bg);color:var(--green-text)}
+.b-warn{background:var(--amber-bg);color:var(--amber-text)}
+.b-danger{background:var(--red-bg);color:var(--red-text)}
+.b-info{background:var(--blue-bg);color:var(--blue-text)}
+.b-gray{background:var(--bg3);color:var(--text2)}
+.b-accent{background:var(--accent-bg);color:var(--accent-dark)}
+
+/* Detail panel */
+.detail{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:18px}
+.sec-lbl{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+
+/* Phase blocks */
+.phase-block{border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:visible}
+.phase-block.late{border-color:var(--red-border)}
+.phase-block.active-ph{border-color:var(--accent)}
+.ph-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:var(--bg);border-radius:var(--r);transition:background .1s}
+.ph-header:hover{background:var(--bg2)}
+.phase-block.open .ph-header{border-radius:var(--r) var(--r) 0 0}
+.chev{font-size:9px;color:var(--text3);transition:transform .15s;flex-shrink:0}
+.phase-block.open .chev{transform:rotate(90deg)}
+.ph-check{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#fff}
+.ph-check.done{background:var(--accent);border-color:var(--accent)}
+.ph-check.partial{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-dark)}
+.ph-info{flex:1;min-width:0}
+.ph-name{font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ph-meta{font-size:11px;color:var(--text2);margin-top:1px}
+.ph-draw{text-align:right;flex-shrink:0}
+.ph-draw .amt{font-size:12px;font-weight:600}
+.ph-draw .paid-st{font-size:10px;color:var(--text2)}
+.ph-draw .paid-st.paid{color:var(--green-text)}
+.ph-draw .tc{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* Phase body */
+.ph-body{border-top:0.5px solid var(--border);background:var(--bg);border-radius:0 0 var(--r) var(--r)}
+.task-row{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 28px;border-bottom:0.5px solid var(--border)}
+.task-row:last-of-type{border-bottom:none}
+.tcheck{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:#fff}
+.tcheck.done{background:var(--accent);border-color:var(--accent)}
+.tlbl{flex:1;font-size:12px}
+.tlbl.done{text-decoration:line-through;color:var(--text3)}
+.gate-item{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 28px;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+.gate-item:last-child{border-bottom:none}
+.gate-lbl{font-size:11px;color:var(--text)}
+.gate-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:#fff}
+.gate-check.done{background:var(--green);border-color:var(--green)}
+.gate-section{border-top:0.5px dashed var(--border2);margin-top:0}
+.gate-section-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);padding:5px 12px 3px 28px;background:var(--bg2)}
+
+/* Parallel track */
+.parallel-track{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-top:0.5px solid var(--border);background:var(--bg2)}
+.parallel-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);text-align:center;margin-bottom:6px}
+.track-block{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.track-header{display:flex;align-items:center;gap:6px;padding:8px 10px;cursor:pointer;transition:background .1s}
+.track-header:hover{background:var(--bg2)}
+.track-name{font-size:12px;font-weight:500;flex:1}
+.track-meta{font-size:10px;color:var(--text2)}
+.track-tasks{border-top:0.5px solid var(--border)}
+.track-task{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 22px;border-bottom:0.5px solid var(--border);font-size:11px}
+.track-task:last-child{border-bottom:none}
+.parallel-note{grid-column:1/-1;font-size:11px;color:var(--text2);text-align:center;padding:4px 0;font-style:italic}
+
+/* Phase footer */
+.ph-footer{padding:8px 12px 10px 28px;display:flex;flex-direction:column;gap:7px;background:var(--bg);border-radius:0 0 var(--r) var(--r)}
+.note-disp{font-size:12px;color:var(--text2);font-style:italic;padding:5px 8px;background:var(--bg2);border-radius:var(--r);border-left:3px solid var(--accent);line-height:1.5}
+.note-inp{width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:inherit;resize:vertical;min-height:54px}
+.note-inp:focus{border-color:var(--accent)}
+
+/* Buttons */
+button.btn{background:none;border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 10px;font-size:11px;cursor:pointer;color:var(--text);font-family:inherit;transition:background .1s}
+button.btn:hover{background:var(--bg2)}
+button.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+button.btn-primary:hover{background:var(--accent-dark)}
+button.btn-add{background:var(--accent);color:#fff;font-weight:500;border:none;border-radius:var(--r);padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+button.btn-add:hover{background:var(--accent-dark)}
+
+/* Mini metrics */
+.mini-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.mm{background:var(--bg2);border-radius:var(--r);padding:8px 10px}
+.mm .lbl{font-size:10px;color:var(--text2);margin-bottom:1px}
+.mm .val{font-size:14px;font-weight:600}
+
+/* Modals */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:100;align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--rl);padding:22px;max-width:540px;width:90%;max-height:88vh;overflow-y:auto}
+.modal h2{font-size:15px;font-weight:600;margin-bottom:14px}
+.mf{margin-bottom:10px}
+.mf label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:3px}
+.mf input,.mf textarea,.mf select{width:100%;font-size:12px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+.mf textarea{resize:vertical;min-height:150px;line-height:1.6}
+.mf input:focus,.mf textarea:focus,.mf select:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+/* Add form */
+.add-form{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:16px;display:none}
+.add-form.open{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ff label{display:block;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.ff input,.ff select{width:100%;font-size:12px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+
+/* Revenue */
+.rev-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px 14px;margin-bottom:10px}
+.draw-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dp{font-size:10px;padding:2px 7px;border-radius:20px}
+
+/* Team */
+.team-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:10px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+
+/* Notif */
+.nrow{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:0.5px solid var(--border)}
+.nrow:last-child{border-bottom:none}
+.ndot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Overdue */
+.od-card{background:var(--bg);border:1px solid var(--red-border);border-radius:var(--rl);padding:12px 14px;margin-bottom:9px}
+
+/* Inspection tag */
+.insp-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;background:var(--blue-bg);color:var(--blue-text);border-radius:20px}
+
+@media(max-width:750px){.two-col{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.parallel-track{grid-template-columns:1fr}}
+
+/* Drill-down */
+.drilldown-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.back-btn{background:none;border:0.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:inherit;display:flex;align-items:center;gap:5px}
+.back-btn:hover{background:var(--bg2);color:var(--text)}
+.drilldown-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.drilldown-body{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drilldown-section{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px}
+.drilldown-section.full{grid-column:1/-1}
+
+/* File attachments */
+.file-list{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.file-row{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border)}
+.file-icon{font-size:14px;flex-shrink:0}
+.file-name{flex:1;font-size:12px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-meta{font-size:10px;color:var(--text3);white-space:nowrap}
+.file-actions{display:flex;gap:4px;flex-shrink:0}
+.file-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent-dark);padding:1px 5px;border-radius:3px;font-family:inherit}
+.file-btn:hover{background:var(--accent-bg)}
+.file-btn.del{color:var(--red-text)}
+.file-btn.del:hover{background:var(--red-bg)}
+.drop-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:10px;text-align:center;cursor:pointer;transition:all .15s;margin-top:6px}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-bg)}
+.drop-zone input[type=file]{display:none}
+
+
+.dp-popup{display:none;position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:12px 14px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:300;min-width:220px}
+.dp-popup.open{display:block}
+
+/* Client view modal */
+.client-modal{background:var(--bg);border-radius:var(--rl);padding:28px;max-width:680px;width:95%;max-height:90vh;overflow-y:auto}
+.client-phase-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.client-phase-row:last-child{border-bottom:none}
+.client-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* Project color swatches */
+.p-c-0{color:#C4A882}.p-c-1{color:#5A8C5E}.p-c-2{color:#378ADD}.p-c-3{color:#C47A72}.p-c-4{color:#BA7517}.p-c-5{color:#7A5A9E}
+.pb-0{background:#C4A882}.pb-1{background:#5A8C5E}.pb-2{background:#378ADD}.pb-3{background:#C47A72}.pb-4{background:#BA7517}.pb-5{background:#7A5A9E}
+
+/* Factory schedule */
+.fab-slot{height:28px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:500;color:#fff;position:absolute;white-space:nowrap;overflow:hidden;cursor:default}
+.conflict-badge{background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--red-text)}
+
+
+/* Task groups */
+.tgroup{margin-bottom:3px;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tgroup-hdr{display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);cursor:pointer;user-select:none}
+.tgroup-hdr:hover{background:var(--bg3)}
+.tgroup-body{padding:2px 0 3px 0}
+.tgroup-chev{font-size:9px;color:var(--text3);transition:transform .15s;flex-shrink:0}
+.tgroup-chev.open{transform:rotate(90deg)}
+.tgroup-name{flex:1;font-size:12px;font-weight:500}
+.tgroup-count{font-size:10px;color:var(--text3);white-space:nowrap}
+/* Critical */
+.crit-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:3px}
+.task-row.crit .tlbl{color:var(--red-text)!important}
+/* Task note */
+.tnote{font-size:10px;color:var(--text3);font-style:italic;margin-top:1px}
+.tnote-inp{width:100%;font-size:11px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;resize:none;min-height:30px;margin-top:3px}
+/* Inline add */
+.add-task-row{display:flex;align-items:center;gap:5px;padding:3px 8px}
+.add-task-inp{flex:1;font-size:12px;padding:3px 8px;border:0.5px solid var(--accent);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;outline:none}
+/* Waiting on */
+.waiting-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--amber-text);background:var(--amber-bg);padding:2px 7px;border-radius:10px;margin-top:4px;max-width:100%}
+/* Project notes */
+.proj-notes{width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:56px;line-height:1.5}
+.proj-notes:focus{outline:none;border-color:var(--accent)}
+/* Dep chain */
+.dep-chain{font-size:10px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.dep-blocked-lbl{color:var(--red-text)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div><div class="eyebrow">Neovi</div><h1>Project tracker</h1></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 10px">
+      <span style="font-size:11px;color:var(--text2)">Viewing as</span>
+      <span id="role-label" style="font-size:12px;font-weight:600;color:var(--accent-dark)">PM</span>
+    </div>
+    <button class="btn-add" onclick="toggleAddForm()">+ New project</button>
+  </div>
+</div>
+
+<div class="add-form" id="add-form">
+  <div class="sec-lbl" style="margin-bottom:12px">New project</div>
+  <div class="form-grid">
+    <div class="ff"><label>Project name</label><input id="n-name" placeholder="e.g. Santa Rita"></div>
+    <div class="ff"><label>Address</label><input id="n-addr" placeholder="123 Main St, City CA"></div>
+    <div class="ff"><label>Project type</label><select id="n-type"><option value="client">Client Build</option><option value="spec">Spec Build</option></select></div>
+    <div class="ff"><label>Contract value ($)</label><input id="n-val" type="number" placeholder="450000"></div>
+    <div class="ff"><label>Tier (Client Build)</label><select id="n-tier"><option value="">N/A</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option></select></div>
+    <div class="ff"><label>Planning IR required?</label><select id="n-ir"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="addProject()">Add project</button>
+    <button class="btn" onclick="toggleAddForm()">Cancel</button>
+  </div>
+</div>
+
+<div class="metrics" id="metrics"></div>
+<div id="role-banner" class="role-banner" style="display:none"></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="projects" onclick="switchTab('projects',this)">Projects</button>
+  <button class="tab" data-tab="overdue" onclick="switchTab('overdue',this)">Overdue</button>
+  <button class="tab" data-tab="team" onclick="switchTab('team',this)">Team</button>
+  <button class="tab" data-tab="schedule" onclick="switchTab('schedule',this)">Schedule</button>
+  <button class="tab" data-tab="factory" onclick="switchTab('factory',this)">Factory</button>
+  <button class="tab" data-tab="notifications" onclick="switchTab('notifications',this)">Notifications</button>
+  <button class="tab" data-tab="settings" onclick="switchTab('settings',this)">⚙ Settings</button>
+</div>
+
+<div id="tab-projects">
+  <div id="projects-list-view">
+    <div class="two-col"><div id="project-list"></div><div id="detail-panel"></div></div>
+  </div>
+  <div id="project-drilldown" style="display:none"></div>
+</div>
+<div id="tab-overdue" style="display:none"><div id="overdue-list"></div></div>
+<div id="tab-team" style="display:none"><div id="team-list"></div></div>
+<div id="tab-schedule" style="display:none"><div id="schedule-view"></div></div>
+<div id="tab-factory" style="display:none"><div id="factory-view"></div></div>
+<div id="tab-notifications" style="display:none"><div id="notif-view"></div></div>
+<div id="tab-settings" style="display:none"><div id="settings-view"></div></div>
+
+<!-- Notification settings panel -->
+<div id="notif-panel" style="display:none;position:fixed;top:0;right:0;width:400px;max-width:95vw;height:100vh;background:var(--bg);border-left:0.5px solid var(--border2);box-shadow:-4px 0 20px rgba(0,0,0,0.1);z-index:200;overflow-y:auto;padding:20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div><div style="font-size:16px;font-weight:600">Notifications</div><div style="font-size:12px;color:var(--text2)">Reminder schedule &amp; settings</div></div>
+    <button onclick="toggleNotifPanel()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 10px;cursor:pointer;font-size:12px;font-family:inherit">Close ✕</button>
+  </div>
+  <div id="notif-panel-body"></div>
+</div>
+<div id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.15);z-index:199"></div>
+
+</div>
+
+<!-- Date picker popup -->
+<div class="dp-popup" id="dp-popup">
+  <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px" id="dp-label"></div>
+  <input type="date" id="dp-input" style="width:100%;font-size:13px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;outline:none">
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button class="btn btn-primary" style="flex:1;font-size:11px;padding:4px" onclick="confirmDP()">Set date</button>
+    <button class="btn" style="font-size:11px;padding:4px 8px" onclick="closeDP()">Cancel</button>
+    <button class="btn" style="font-size:11px;padding:4px 8px;color:var(--red-text)" onclick="clearDP()">Clear</button>
+  </div>
+</div>
+
+<!-- Email modal -->
+<div class="modal-backdrop" id="email-modal">
+  <div class="modal">
+    <h2>Reminder email</h2>
+    <div class="mf"><label>To</label><input id="e-to"></div>
+    <div class="mf"><label>CC</label><input id="e-cc" value="pm@neovi.com"></div>
+    <div class="mf"><label>Subject</label><input id="e-subj"></div>
+    <div class="mf"><label>Body</label><textarea id="e-body"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEmail()">Close</button>
+      <button class="btn btn-primary" onclick="copyEmail()">Copy to clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule suggestion modal -->
+<div class="modal-backdrop" id="schedule-modal">
+  <div class="modal" style="max-width:460px">
+    <h2 id="sm-title">Phase complete — schedule next phase</h2>
+    <div style="background:var(--green-bg);border-radius:var(--r);padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:500;color:var(--green-text)" id="sm-completed-msg"></div>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px" id="sm-next-msg"></div>
+    <div class="mf">
+      <label>Due date for next phase</label>
+      <input type="date" id="sm-date">
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px" id="sm-calc-note"></div>
+    <div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:4px">Auto-schedule tasks within phase</div>
+      <div style="font-size:11px;color:var(--text3)" id="sm-task-note"></div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer">
+        <input type="checkbox" id="sm-auto-tasks" checked>
+        <span style="font-size:12px">Distribute task due dates sequentially across phase duration</span>
+      </label>
+    </div>
+    <input type="hidden" id="sm-pid">
+    <input type="hidden" id="sm-next-pi">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeScheduleModal()">Skip for now</button>
+      <button class="btn btn-primary" onclick="acceptSchedule()">Set schedule →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── ROLES & PERMISSIONS ─────────────────────────────────────────────────────
+const ROLES = {
+  pm:       {label:'PM',          desc:'Full access — all projects, all data',       color:'var(--accent-dark)'},
+  partner:  {label:'Partner',     desc:'All projects and phases — no financials',     color:'#5A8C5E'},
+  client:   {label:'Client',      desc:'Own project only — with payment schedule',    color:'#378ADD'},
+  viewonly: {label:'View only',   desc:'All projects — read only, no financials',     color:'#BA7517'},
+};
+
+let currentRole = 'pm';
+let darkMode = false;
+
+
+function canEdit() {
+  return currentRole === 'pm';
+}
+
+function isReadOnly() {
+  return currentRole === 'viewonly';
+}
+
+function setRole(role) {
+  currentRole = role;
+  // Update header label
+  const rl = document.getElementById('role-label');
+  if (rl) { rl.textContent = ROLES[role].label; rl.style.color = ROLES[role].color; }
+  // Re-render everything with new permissions
+  renderAll();
+  // Re-render whichever tab is open
+  const activeTab = document.querySelector('.tab.active')?.dataset?.tab;
+  if (activeTab === 'overdue') renderOverdue();
+  if (activeTab === 'notifications') renderNotifications();
+  if (activeTab === 'settings') renderSettings();
+}
+
+function setDarkMode(on) {
+  darkMode = on;
+  document.documentElement.setAttribute('data-theme', on ? 'dark' : '');
+}
+
+function openSettings() {
+  // Switch to settings tab
+  switchTab('settings', document.querySelector('[data-tab=settings]'));
+}
+
+// ─── PARTNERS ───────────────────────────────────────────────────────────────
+const PARTNERS = {
+  'Neovi PM':       {company:'Neovi',      email:'pm@neovi.com'},
+  'Spacial':        {company:'Spacial',    email:'dan@spacial.com'},
+  'Spacial/Permit': {company:'Spacial',    email:'barbara@spacial.com'},
+  'Greenberg':      {company:'Greenberg',  email:'maor@greenberg.com'},
+  'ACE':            {company:'ACE',        email:'ace@acengineers.com'},
+  'Vault Studio':   {company:'Vault Studio',email:'vault@vaultstudio.com'},
+  'Neovi Eng':      {company:'Neovi',      email:'amit@neovi.com'},
+  'Neovi Fab':      {company:'Neovi',      email:'francesca@neovi.com'},
+  'Neovi Found':    {company:'Neovi',      email:'kyle@neovi.com'},
+  'Neovi Assembly': {company:'Neovi',      email:'didier@neovi.com'},
+  'Greenberg+Neovi':{company:'Greenberg + Neovi',email:'maor@greenberg.com'},
+};
+
+// ─── SCHEDULING DEFAULTS ─────────────────────────────────────────────────────
+const PHASE_DURATIONS = {
+  'Project Kick Off':     14,
+  'Schematic Design':     30,
+  'Design Development':   45,
+  'Municipal Permitting': 60,
+  'Construction':          0, // handled by tracks
+};
+
+const TRACK_DURATIONS = {
+  'demo':           7,
+  'site-prep':     14,
+  'fabrication':   30,
+  'foundation':    30,
+  'panel-assembly':14,
+  'dry-in':         7,
+  'rough-in':      14,
+  'finishing':     45,
+  'turnover':      21,
+};
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+// Auto-schedule task due dates sequentially within a phase
+function autoScheduleTasks(ph) {
+  if (!ph.startDate) return;
+  const dur = PHASE_DURATIONS[ph.name] || 30;
+  const tasks = ph.tasks.filter(t => !t.done);
+  const total = ph.tasks.length;
+  if (!total) return;
+  ph.tasks.forEach((t, i) => {
+    if (!t.dueDate) {
+      t.dueDate = addDays(ph.startDate, Math.round(dur * (i + 1) / total));
+    }
+  });
+}
+
+function autoScheduleTrackTasks(tr, startDate) {
+  if (!startDate) return;
+  const dur = TRACK_DURATIONS[tr.id] || 14;
+  const total = tr.tasks.length;
+  if (!total) return;
+  tr.tasks.forEach((t, i) => {
+    if (!t.dueDate) {
+      t.dueDate = addDays(startDate, Math.round(dur * (i + 1) / total));
+    }
+  });
+}
+
+
+
+
+// ─── PHASE TEMPLATES ────────────────────────────────────────────────────────
+function getPhaseTemplate(projectType, planningIR) {
+  const isClient = projectType === 'client';
+  return [
+    {
+      id:1, name:'Project Kick Off', owner:'Neovi PM',
+      tasks: isClient ? [
+        'Client engagement — initial intake & scope discussion',
+        'Spacial design contract executed (client contracts directly)',
+        'Client selects tier package (Silver / Gold / Platinum)',
+        'Client contract executed — scope, fee, allowances',
+        'ACE contract executed (Neovi pays)',
+        'Greenberg contract executed',
+        'Site consultants contracted (survey, arborist, geotech, civil)',
+        'Kick off meeting held',
+      ] : [
+        'Lot acquired; project LLC established',
+        'Neovi PM assembles project brief (size, stories, zoning, schedule, budget)',
+        'Spacial contract executed (LLC contracts; Neovi manages)',
+        'ACE contract executed (Neovi pays)',
+        'Kick off meeting: Neovi + Spacial + Greenberg — brief presented',
+        'Spacial commits to floor plan delivery date',
+        'Greenberg contract executed',
+        'Site consultants contracted (geotech, civil, survey, arborist, landscape arch)',
+      ],
+      gateChecklist: isClient ? [
+        {item:'Spacial contract executed', done:false},
+        {item:'ACE contract executed (Neovi)', done:false},
+        {item:'Greenberg contract executed', done:false},
+        {item:'Site consultants contracted', done:false},
+        {item:'Floor plan ~90% complete', done:false},
+        {item:'Kick off meeting held', done:false},
+      ] : [
+        {item:'Spacial contract executed', done:false},
+        {item:'ACE contract executed (Neovi)', done:false},
+        {item:'Greenberg contract executed', done:false},
+        {item:'Site consultants contracted', done:false},
+        {item:'Project brief distributed to core team', done:false},
+        {item:'Spacial floor plan delivery date committed', done:false},
+        {item:'Kick off meeting held', done:false},
+      ],
+      note:'', done:false, open:false,
+    },
+    {
+      id:2, name:'Schematic Design', owner:'Spacial',
+      tasks: [
+        'Spacial develops floor plan & elevations',
+        'Neovi PM reviews first draft (prefab compatibility)',
+        'Vault Studio adds casework dimensions and locations',
+        'Revision rounds — all parties aligned',
+        ...(planningIR === 'yes' ? [
+          'Pre-application design review (Spacial + Neovi page turn)',
+          'Planning IR — formal application submitted (Spacial manages)',
+        ] : []),
+        'Structural upgrade assessment (Neovi prices; via Greenberg)',
+        'Spacial assembles full schematic package (IFC model, survey, geotech, civil, cabinetry)',
+        ...(isClient ? [
+          'Client design lock acknowledgement signed',
+          'Greenberg contract signed by client',
+          'Client formal sign-off',
+        ] : [
+          'Formal sign-off: Neovi',
+        ]),
+      ],
+      gateChecklist: [
+        {item:'IFC model (floor plan + elevations) received', done:false},
+        {item:'Cabinetry locations and dimensions set in IFC', done:false},
+        {item:'Site survey complete', done:false},
+        {item:'Geotechnical report received', done:false},
+        {item:'Civil schematic with utility locations received', done:false},
+        {item:'Planning approval received', done:false},
+        ...(isClient ? [
+          {item:'Structural upgrade pricing agreed and documented', done:false},
+          {item:'Client design lock acknowledgement signed', done:false},
+          {item:'Client formal sign-off', done:false},
+        ] : []),
+        {item:'Neovi formal sign-off', done:false},
+      ],
+      note:'', done:false, open:false,
+    },
+    {
+      id:3, name:'Design Development', owner:'Neovi Eng',
+      tasks: [
+        'IFC model import & verification (prefab compatibility check)',
+        'Structural engineering — ACE (full structural + foundation package stamped)',
+        'Helical pile manufacturer provides foundation calculations',
+        'Panel layout — preliminary schedule (parallel)',
+        'Title 24 / HERS energy compliance (parallel)',
+        'MEP integration & de-confliction (HVAC, electrical, plumbing vs structure)',
+        'Full drawing set assembled (architectural, structural, MEP, Title 24, fire)',
+        'Design review — Spacial (code compliance & municipal risk check)',
+        'ICC/NTA review — revise & resubmit as needed',
+        'Site logistics plan — crane, access, encroachment (parallel with ICC/NTA)',
+        'Site logistics plan distributed to Spacial, Greenberg, and Neovi',
+        'ICC/NTA approval & stamp received',
+      ],
+      gateChecklist: [
+        {item:'IFC model verified and accepted by Neovi team', done:false},
+        {item:'Structural and foundation package stamped by ACE', done:false},
+        {item:'MEP plans complete and de-conflicted', done:false},
+        {item:'Final panelization schedule confirmed', done:false},
+        {item:'Title 24 / energy compliance certified', done:false},
+        {item:'Fire protection plan complete', done:false},
+        {item:'Full drawing set assembled', done:false},
+        {item:'Spacial design review complete — no outstanding code issues', done:false},
+        {item:'Site logistics plan complete and distributed', done:false},
+        {item:'ICC/NTA approval and stamp received', done:false},
+      ],
+      note:'', done:false, open:false,
+    },
+    {
+      id:4, name:'Municipal Permitting', owner:'Spacial/Permit',
+      tasks: [
+        'Permit package assembled by Spacial (ICC/NTA set, civil, landscape, geotech, arborist)',
+        'Demolition plan and site plan included',
+        'Special inspector application (helical piles)',
+        'Building permit application submitted (Neovi designer of record)',
+        'Grading permit application submitted',
+        'Utility permit applications submitted',
+        'Encroachment permit application submitted',
+        'City plan check review',
+        'Plan check comments responded to and resolved (Neovi & Spacial co-lead)',
+        'Building permit issued',
+        'Grading permit issued',
+        'Utility permits issued',
+        'Greenberg mobilization scheduled',
+        'Factory fabrication scheduled',
+      ],
+      gateChecklist: [
+        {item:'Full permit package assembled by Spacial', done:false},
+        {item:'Building permit application submitted', done:false},
+        {item:'Grading permit application submitted', done:false},
+        {item:'Utility permit applications submitted', done:false},
+        {item:'All plan check comments responded to and resolved', done:false},
+        {item:'Building permit issued', done:false},
+        {item:'Grading permit issued', done:false},
+        {item:'Utility permits issued', done:false},
+        {item:'Greenberg mobilization scheduled', done:false},
+        {item:'Factory fabrication scheduled', done:false},
+      ],
+      note:'', done:false, open:false,
+    },
+    {
+      id:5, name:'Construction', owner:'Greenberg+Neovi',
+      // Phase 5 uses parallel tracks — see parallelTracks field
+      tasks: [], // tasks live in tracks
+      parallelTracks: {
+        siteTrack: [
+          {
+            id:'demo', name:'Demolition', owner:'Greenberg', ownerEmail:'maor@greenberg.com',
+            tasks:[
+              {name:'Grading permit confirmed in hand', done:false},
+              {name:'Greenberg mobilizes to site', done:false},
+              {name:'Demolition complete', done:false},
+              {name:'City demolition inspection passed', done:false},
+            ], done:false, open:false
+          },
+          {
+            id:'site-prep', name:'Site preparation', owner:'Greenberg', ownerEmail:'maor@greenberg.com',
+            tasks:[
+              {name:'Grading and drainage complete', done:false},
+              {name:'Underground utilities installed', done:false},
+              {name:'Hardscape base preparation complete', done:false},
+              {name:'Erosion control and drainage in place', done:false},
+              {name:'City / Public Works inspections passed', done:false},
+            ], done:false, open:false
+          },
+          {
+            id:'foundation', name:'Foundation', owner:'Neovi Found', ownerEmail:'kyle@neovi.com',
+            tasks:[
+              {name:'Helical pile layout complete', done:false},
+              {name:'Helical pile installation — special inspector on site', done:false},
+              {name:'Pile head bracket attachments complete', done:false},
+              {name:'HSS beam installation (bolting) complete', done:false},
+              {name:'Neovi internal QC inspection passed', done:false},
+              {name:'City foundation inspection passed', done:false},
+            ], done:false, open:false,
+            inspections:[{name:'Helical pile installation',inspector:'Special inspector',status:'pending'},{name:'Foundation complete',inspector:'City',status:'pending'}]
+          },
+        ],
+        factoryTrack: [
+          {
+            id:'fabrication', name:'Fabrication', owner:'Neovi Fab', ownerEmail:'francesca@neovi.com',
+            tasks:[
+              {name:'Factory production slot scheduled', done:false},
+              {name:'Panel fabrication started', done:false},
+              {name:'ICC/NTA factory inspection during production', done:false},
+              {name:'Solid surface wall panels produced', done:false},
+              {name:'MEP fully integrated into wall panels', done:false},
+              {name:'Integrated MEP pressure test passed', done:false},
+              {name:'Stretch ceiling membrane fabricated', done:false},
+              {name:'Windows pre-installed in panels', done:false},
+              {name:'QC inspection — panels, solid surface, MEP', done:false},
+              {name:'Panels ready for delivery (timed with foundation)', done:false},
+            ], done:false, open:false,
+            inspections:[{name:'Factory fabrication',inspector:'ICC/NTA',status:'pending'}]
+          },
+        ],
+        assemblyTrack: [
+          {
+            id:'panel-assembly', name:'Panel assembly', owner:'Neovi Assembly', ownerEmail:'didier@neovi.com',
+            tasks:[
+              {name:'Panels and materials delivered to site', done:false},
+              {name:'Crane and crew mobilized', done:false},
+              {name:'Floor cassettes installed', done:false},
+              {name:'Interior and exterior wall panels set and plumbed', done:false},
+              {name:'Roof truss cassettes installed', done:false},
+              {name:'5" insulated roofing panels installed', done:false},
+              {name:'Greenberg site coordination complete', done:false},
+              {name:'City framing inspection passed', done:false},
+            ], done:false, open:false,
+            inspections:[{name:'Framing complete',inspector:'City',status:'pending'}]
+          },
+          {
+            id:'dry-in', name:'Exterior dry-in', owner:'Neovi Assembly', ownerEmail:'didier@neovi.com',
+            tasks:[
+              {name:'Fiber cement cladding on exposed truss ends installed', done:false},
+              {name:'Spray-foam on interior of fiber cement panels applied', done:false},
+            ], done:false, open:false
+          },
+          {
+            id:'rough-in', name:'Rough-in & panel connections', owner:'Neovi Assembly', ownerEmail:'didier@neovi.com',
+            tasks:[
+              {name:'120V circuits connected to main breaker panel (MC cable home runs)', done:false},
+              {name:'Hot/cold PEX piping connected to main water supply', done:false},
+              {name:'24VDC low voltage run to all devices and switches', done:false},
+              {name:'Recessed and pendant lighting installed', done:false},
+              {name:'Rockwool soundproofing installed where indicated', done:false},
+              {name:'HVAC systems installed', done:false},
+              {name:'Hot water heater installed', done:false},
+              {name:'Digital home panel installed (control system brain)', done:false},
+              {name:'Utility connections scheduled with utility companies', done:false},
+              {name:'City rough-in inspections passed', done:false},
+            ], done:false, open:false,
+            inspections:[{name:'Rough-in complete',inspector:'City',status:'pending'}]
+          },
+          {
+            id:'finishing', name:'Finishing', owner:'Greenberg+Neovi', ownerEmail:'maor@greenberg.com',
+            tasks:[
+              // Neovi scope
+              {name:'[Neovi] Solid surface seams sanded and finished', done:false},
+              {name:'[Neovi] Window sills, returns, end caps installed', done:false},
+              {name:'[Neovi] Stretch ceiling tracks and perimeter profiles installed', done:false},
+              {name:'[Neovi] LED perimeter lighting and diffuser covers installed', done:false},
+              {name:'[Neovi] Stretch ceiling membrane installed', done:false},
+              {name:'[Neovi] SPC/engineered wood flooring installed', done:false},
+              {name:'[Neovi] Standard cabinetry, vanities, countertops installed', done:false},
+              {name:'[Neovi] Bathrooms: toilets, shower tower, shower niches, pans', done:false},
+              {name:'[Neovi] Smart home buttons, touch panels, sensors installed', done:false},
+              {name:'[Neovi] Interior/exterior doors, baseboards, appliances', done:false},
+              {name:'[Neovi] Exterior cladding, soffits, trim, lighting, mailbox', done:false},
+              {name:'[Neovi] Solar panels, Tesla Powerwall, EV charging installed', done:false},
+              // Greenberg scope
+              {name:'[Greenberg] Custom flooring (hardwood/tile) installed', done:false},
+              {name:'[Greenberg] Custom cabinetry and countertops installed', done:false},
+              {name:'[Greenberg] Wall finishes (stone, wallpaper, paint, stucco)', done:false},
+              {name:'[Greenberg] Non-standard exterior scope complete', done:false},
+              {name:'[Greenberg] Shower glass, skylights, gutters installed', done:false},
+              {name:'[Greenberg] Final cleaning complete', done:false},
+            ], done:false, open:false
+          },
+          {
+            id:'turnover', name:'Turnover', owner:'Greenberg+Neovi', ownerEmail:'maor@greenberg.com',
+            tasks:[
+              {name:'Neovi substantial completion achieved', done:false},
+              {name:'Greenberg leads client walkthrough', done:false},
+              {name:'Punch list issued', done:false},
+              {name:'Punch list items resolved', done:false},
+              {name:'Smart home orientation delivered by Neovi tech specialist', done:false},
+              {name:'Warranty documentation delivered to client', done:false},
+              {name:'Operations and maintenance manuals delivered', done:false},
+              {name:'Keys, access codes, and devices transferred', done:false},
+              {name:'Post-occupancy support period documented in contract', done:false},
+              {name:'Certificate of Occupancy issued', done:false},
+            ], done:false, open:false,
+            inspections:[{name:'Final inspection',inspector:'City',status:'pending'}]
+          },
+        ]
+      },
+      gateChecklist: [
+        {item:'Neovi substantial completion achieved', done:false},
+        {item:'Greenberg client walkthrough complete', done:false},
+        {item:'Punch list items resolved', done:false},
+        {item:'Smart home orientation delivered', done:false},
+        {item:'Warranty documentation delivered', done:false},
+        {item:'Operations and maintenance manuals delivered', done:false},
+        {item:'Keys, access codes, and devices transferred', done:false},
+        {item:'Post-occupancy support period documented in contract', done:false},
+        {item:'Certificate of Occupancy issued', done:false},
+      ],
+      note:'', done:false, open:false,
+    }
+  ];
+}
+
+// ─── SEED DATA ──────────────────────────────────────────────────────────────
+function makeProject(id, name, address, type, tier, contractValue, activePhasIdx, planningIR, overduePhaseName) {
+  const phases = getPhaseTemplate(type, planningIR);
+  phases.forEach((ph, i) => {
+    if (i < activePhasIdx) {
+      ph.done = true;
+      ph.tasks = ph.tasks.map(t => typeof t === 'string' ? {name:t,done:true} : {...t,done:true});
+      ph.gateChecklist = ph.gateChecklist.map(g => ({...g,done:true}));
+      if (ph.parallelTracks) {
+        Object.values(ph.parallelTracks).flat().forEach(tr => {
+          tr.done = true;
+          tr.tasks = tr.tasks.map(t => ({...t,done:true}));
+        });
+      }
+    } else if (i === activePhasIdx) {
+      ph.tasks = ph.tasks.map(t => typeof t === 'string' ? {name:t,done:false} : t);
+    } else {
+      ph.tasks = ph.tasks.map(t => typeof t === 'string' ? {name:t,done:false} : t);
+    }
+  });
+  if (overduePhaseName) {
+    const ph = phases.find(p => p.name === overduePhaseName);
+    if (ph) ph.overdue = true;
+  }
+
+  // ── Build schedule from a project start date using cumulative durations ──
+  // Work backwards from today to set a realistic project start
+  const today = '2026-04-10';
+  let cumDays = 0;
+  const phaseDurList = ['Project Kick Off','Schematic Design','Design Development','Municipal Permitting'].map(n => PHASE_DURATIONS[n]);
+  // sum durations of phases before active one
+  for (let i = 0; i < activePhasIdx && i < phaseDurList.length; i++) cumDays += phaseDurList[i];
+  const projectStart = addDays(today, -cumDays - 5); // started cumDays ago + small buffer
+
+  let cursor = projectStart;
+  phases.forEach((ph, i) => {
+    ph.startDate = cursor;
+    const dur = PHASE_DURATIONS[ph.name] || 30;
+    const endDate = addDays(cursor, dur);
+    if (ph.done) {
+      ph.dueDate = endDate;
+      ph.completedDate = addDays(cursor, Math.round(dur * 0.9)); // completed slightly before due
+      ph.tasks = ph.tasks.map((t,ti) => ({
+        ...t, done:true,
+        dueDate: addDays(cursor, Math.round(dur * (ti+1) / ph.tasks.length)),
+        completedDate: addDays(cursor, Math.round(dur * (ti+0.8) / ph.tasks.length))
+      }));
+      cursor = ph.completedDate;
+    } else if (ph.overdue) {
+      ph.dueDate = addDays(cursor, Math.round(dur * 0.7)); // due date already passed
+      // Auto-schedule tasks sequentially
+      ph.tasks.forEach((t,ti) => {
+        if (!t.dueDate) t.dueDate = addDays(ph.startDate, Math.round(dur * (ti+1) / ph.tasks.length));
+      });
+      cursor = addDays(ph.dueDate, dur);
+    } else {
+      ph.dueDate = endDate;
+      // Auto-schedule tasks sequentially from phase start
+      ph.tasks.forEach((t,ti) => {
+        if (!t.dueDate) t.dueDate = addDays(ph.startDate, Math.round(dur * (ti+1) / ph.tasks.length));
+      });
+      cursor = endDate;
+    }
+    // Phase 5 tracks get start/due dates
+    if (ph.parallelTracks) {
+      let trackCursor = ph.startDate;
+      ['siteTrack','factoryTrack'].forEach(tk => {
+        ph.parallelTracks[tk]?.forEach(tr => {
+          tr.startDate = trackCursor;
+          const trDur = TRACK_DURATIONS[tr.id]||14;
+          tr.dueDate = addDays(trackCursor, trDur);
+          if (tr.done) {
+            tr.completedDate = addDays(trackCursor, Math.round(trDur*0.9));
+            tr.tasks = tr.tasks.map((t,ti)=>({...t,done:true,completedDate:addDays(trackCursor,Math.round(trDur*(ti+0.8)/tr.tasks.length)),dueDate:addDays(trackCursor,Math.round(trDur*(ti+1)/tr.tasks.length))}));
+          } else {
+            tr.tasks.forEach((t,ti)=>{if(!t.dueDate)t.dueDate=addDays(trackCursor,Math.round(trDur*(ti+1)/tr.tasks.length));});
+          }
+        });
+      });
+      // Assembly track runs sequentially after parallel tracks
+      let asmCursor = addDays(ph.startDate, Math.max(...['siteTrack','factoryTrack'].map(tk=>
+        (ph.parallelTracks[tk]||[]).reduce((s,tr)=>s+(TRACK_DURATIONS[tr.id]||14),0)
+      )));
+      ph.parallelTracks.assemblyTrack?.forEach(tr => {
+        tr.startDate = asmCursor;
+        const trDur = TRACK_DURATIONS[tr.id]||14;
+        tr.dueDate = addDays(asmCursor, trDur);
+        if (tr.done) {
+          tr.completedDate = addDays(asmCursor, Math.round(trDur*0.9));
+          tr.tasks = tr.tasks.map((t,ti)=>({...t,done:true,completedDate:addDays(asmCursor,Math.round(trDur*(ti+0.8)/tr.tasks.length)),dueDate:addDays(asmCursor,Math.round(trDur*(ti+1)/tr.tasks.length))}));
+        } else {
+          tr.tasks.forEach((t,ti)=>{if(!t.dueDate)t.dueDate=addDays(asmCursor,Math.round(trDur*(ti+1)/tr.tasks.length));});
+        }
+        asmCursor = addDays(asmCursor, trDur);
+      });
+    }
+  });
+  return {id, name, address, type, tier: type==='client'?tier:'', contractValue, planningIR, phases, status: activePhasIdx >= 5 ? 'complete' : activePhasIdx > 0 ? 'active' : 'planning'};
+}
+
+let projects = [
+  // Santa Rita — stuck at Municipal Permitting (phase index 3), 18 days overdue
+  makeProject(1,'Santa Rita','1482 Elmwood Dr, San Jose CA','client','gold',4850000,3,'no','Municipal Permitting'),
+  // Meadow — stuck at Design Development (phase index 2), 12 days overdue
+  makeProject(2,'Meadow','334 Maple St, Fremont CA','client','silver',3200000,2,'yes','Design Development'),
+  // Franklin — stuck at Municipal Permitting (phase index 3), 9 days overdue
+  makeProject(3,'Franklin','780 Industrial Way, Hayward CA','spec','',7800000,3,'no','Municipal Permitting'),
+  // Fernando — stuck at Project Kick Off (phase index 0), 22 days overdue
+  makeProject(4,'Fernando','92 Hilltop Ct, Oakland CA','client','platinum',5400000,0,'unknown','Project Kick Off'),
+  // Upland — in Schematic Design, on track
+  makeProject(5,'Upland','215 Upland Ave, San Leandro CA','spec','',3800000,1,'unknown',null),
+  // Colorado — just kicked off, on track
+  makeProject(6,'Colorado','503 Colorado Blvd, Union City CA','spec','',6200000,0,'unknown',null),
+];
+
+// Seed draw statuses matching real pipeline positions
+projects[1].drawStatus = {contract:'paid', planning:'paid', preprod:'upcoming', foundation:'upcoming', panel:'upcoming', substantial:'upcoming'};
+projects[3].drawStatus = {contract:'triggered', planning:'upcoming', preprod:'upcoming', foundation:'upcoming', panel:'upcoming', substantial:'upcoming'};
+projects[5].drawStatus = {contract:'paid', planning:'upcoming', preprod:'upcoming', foundation:'upcoming', panel:'upcoming', substantial:'upcoming'};
+
+let selectedId = 1;
+const editingNote = {};
+const reminderLog = {};
+
+// ─── UTILITIES ──────────────────────────────────────────────────────────────
+function daysDiff(d) { return Math.round((new Date(d) - new Date()) / 86400000); }
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtTS(ts) { const d=new Date(ts); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+
+function activePhase(p) { return p.phases.find(ph => !ph.done) || p.phases[p.phases.length-1]; }
+
+// Flatten all tasks from a phase, including those inside groups
+function allPhaseTasks(ph) {
+  if (!ph.tasks) return [];
+  const flat = [];
+  ph.tasks.forEach(t => {
+    if (t.isGroup) t.tasks.forEach(gt => flat.push(gt));
+    else flat.push(t);
+  });
+  if (ph.parallelTracks) {
+    Object.values(ph.parallelTracks).flat().forEach(tr => tr.tasks.forEach(t => flat.push(t)));
+  }
+  return flat;
+}
+
+function pctWork(p) {
+  let done=0, total=0;
+  p.phases.forEach(ph => {
+    allPhaseTasks(ph).forEach(t => { total++; if(t.done) done++; });
+  });
+  return total ? Math.round(done/total*100) : 0;
+}
+
+function pctComplete(p) { return pctWork(p); }
+
+// Get first blocking task for a project card "Waiting on" 
+function getWaitingOn(p) {
+  const ap = activePhase(p);
+  if (!ap || ap.done) return null;
+  // First critical incomplete task
+  const tasks = allPhaseTasks(ap);
+  const crit = tasks.find(t => t.critical && !t.done);
+  if (crit) return crit.name;
+  // First task blocking others
+  const blocking = tasks.find(t => !t.done && tasks.some(t2 => t2.dependsOn === t.id && !t2.done));
+  if (blocking) return blocking.name;
+  return null;
+}
+
+// ─── TASK GROUP STATE ────────────────────────────────────────────────────────
+const groupOpen = {}; // key: `${pId}_${pi}_${gIdx}`
+const addingTaskState = {}; // key -> {groupIdx or null}
+const editingTaskNote = {}; // key: `${pId}_${pi}_${ti}` or `${pId}_${pi}_g${gi}_${ti}`
+
+function toggleGroup(pId, pi, gi) {
+  const key = `${pId}_${pi}_${gi}`;
+  groupOpen[key] = !groupOpen[key];
+  if (drilldownProjectId===pId) renderDrilldown(); else renderDetail();
+}
+
+function isGroupOpen(pId, pi, gi) {
+  const key = `${pId}_${pi}_${gi}`;
+  return groupOpen[key] !== false; // default open
+}
+
+// Inline add task
+function startAddTask(pId, pi, groupIdx) {
+  const key = `add_${pId}_${pi}`;
+  addingTaskState[key] = groupIdx === undefined ? null : groupIdx;
+  if (drilldownProjectId===pId) renderDrilldown(); else renderDetail();
+  setTimeout(() => {
+    const el = document.getElementById(`ati_${pId}_${pi}`);
+    if (el) el.focus();
+  }, 30);
+}
+
+function commitAddTask(pId, pi, event) {
+  if (event && event.key && event.key !== 'Enter') return;
+  const key = `add_${pId}_${pi}`;
+  const inp = document.getElementById(`ati_${pId}_${pi}`);
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) { cancelAddTask(pId, pi); return; }
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[pi];
+  const groupIdx = addingTaskState[key];
+  const newTask = {id: `t_${Date.now()}`, name, done:false, critical:false, note:'', dependsOn:null};
+  if (groupIdx !== null && groupIdx !== undefined) {
+    ph.tasks[groupIdx].tasks.push(newTask);
+  } else {
+    ph.tasks.push(newTask);
+  }
+  delete addingTaskState[key];
+  renderAll();
+  if (drilldownProjectId===pId) renderDrilldown();
+}
+
+function cancelAddTask(pId, pi) {
+  delete addingTaskState[`add_${pId}_${pi}`];
+  if (drilldownProjectId===pId) renderDrilldown(); else renderDetail();
+}
+
+function startAddGroup(pId, pi) {
+  const name = prompt('Group name (e.g. "Finishing", "Rough-in"):');
+  if (!name || !name.trim()) return;
+  const p = projects.find(x=>x.id===pId);
+  p.phases[pi].tasks.push({isGroup:true, name:name.trim(), tasks:[], open:true, id:`g_${Date.now()}`});
+  renderAll();
+  if (drilldownProjectId===pId) renderDrilldown();
+}
+
+// Critical flag toggle
+function toggleCritical(pId, pi, taskRef) {
+  const p = projects.find(x=>x.id===pId);
+  const t = resolveTask(p, pi, taskRef);
+  if (t) { t.critical = !t.critical; renderAll(); if(drilldownProjectId===pId) renderDrilldown(); }
+}
+
+// Task note edit
+function startTaskNote(pId, pi, taskRef) {
+  editingTaskNote[`${pId}_${pi}_${taskRef}`] = true;
+  if (drilldownProjectId===pId) renderDrilldown(); else renderDetail();
+  setTimeout(() => { const el = document.getElementById(`tn_${pId}_${pi}_${taskRef}`); if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }, 30);
+}
+
+function saveTaskNote(pId, pi, taskRef) {
+  const p = projects.find(x=>x.id===pId);
+  const t = resolveTask(p, pi, taskRef);
+  const el = document.getElementById(`tn_${pId}_${pi}_${taskRef}`);
+  if (t && el) t.note = el.value.trim();
+  delete editingTaskNote[`${pId}_${pi}_${taskRef}`];
+  renderAll(); if(drilldownProjectId===pId) renderDrilldown();
+}
+
+function cancelTaskNote(pId, pi, taskRef) {
+  delete editingTaskNote[`${pId}_${pi}_${taskRef}`];
+  if (drilldownProjectId===pId) renderDrilldown(); else renderDetail();
+}
+
+// Resolve a task by ref string like "3" (standalone idx) or "g2_1" (group 2, task 1)
+function resolveTask(p, pi, ref) {
+  const ph = p.phases[pi];
+  if (typeof ref === 'string' && ref.startsWith('g')) {
+    const [, gi, ti] = ref.match(/g(\d+)_(\d+)/);
+    return ph.tasks[+gi]?.tasks?.[+ti];
+  }
+  return ph.tasks[+ref];
+}
+
+function renderTaskItem(p, ph, pi, t, ref, indent) {
+  const today = new Date().toISOString().split('T')[0];
+  const isLate = !t.done && t.dueDate && t.dueDate < today;
+  const depTask = t.dependsOn ? allPhaseTasks(ph).find(x=>x.id===t.dependsOn) : null;
+  const isBlocked = depTask && !depTask.done;
+  const blocksOthers = !t.done && allPhaseTasks(ph).some(x=>x.dependsOn===t.id && !x.done);
+  const noteEditing = !!editingTaskNote[`${p.id}_${pi}_${ref}`];
+  const pad = indent ? `padding-left:${indent*14+4}px` : '';
+  
+  return `<div class="task-row${t.critical&&!t.done?' crit':''}" style="${pad}">
+    ${t.critical&&!t.done ? '<div class="crit-dot"></div>' : ''}
+    <button class="tcheck ${t.done?'done':''}${isBlocked?' partial':''}" onclick="toggleTaskByRef(${p.id},${pi},'${ref}')" ${isBlocked?'title="Blocked by: '+depTask.name+'"':''}>
+      ${t.done?'✓':isBlocked?'🔒':''}
+    </button>
+    <div style="flex:1;min-width:0">
+      <span class="tlbl ${t.done?'done':''}">${t.name}</span>
+      ${isBlocked?`<div class="dep-chain dep-blocked-lbl">🔒 Waiting for: ${depTask.name}</div>`:''}
+      ${blocksOthers&&!t.done?`<div class="dep-chain">→ Blocks other tasks</div>`:''}
+      ${t.note&&!noteEditing?`<div class="tnote">📝 ${t.note}</div>`:''}
+      ${noteEditing?`<textarea class="tnote-inp" id="tn_${p.id}_${pi}_${ref}" rows="2">${t.note||''}</textarea><div style="display:flex;gap:4px;margin-top:2px"><button class="btn btn-primary" style="font-size:10px;padding:2px 8px" onclick="saveTaskNote(${p.id},${pi},'${ref}')">Save</button><button class="btn" style="font-size:10px;padding:2px 8px" onclick="cancelTaskNote(${p.id},${pi},'${ref}')">Cancel</button></div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap">
+        ${t.done&&t.completedDate
+          ? `<span style="font-size:10px;color:var(--green-text);cursor:pointer;text-decoration:underline dotted" onclick="editTaskCompletedPrompt(${p.id},${pi},'${ref}',event)">✓ Done ${fmtDate(t.completedDate)} ✎</span>`
+          : `<span style="font-size:10px;color:${isLate?'var(--red-text)':'var(--text3)'}">
+              ${t.dueDate?`${isLate?'⚠ Overdue · ':''}Due ${fmtDate(t.dueDate)}`
+                :`<span style="cursor:pointer;text-decoration:underline dotted" onclick="setTaskDuePrompt(${p.id},${pi},'${ref}',event)">+ Set due date</span>`}
+              ${t.dueDate?`<span style="cursor:pointer;color:var(--text3)" onclick="setTaskDuePrompt(${p.id},${pi},'${ref}',event)" title="Edit">✎</span>`:''}
+            </span>`}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+      <button class="btn" style="font-size:9px;padding:1px 5px;color:${t.critical?'var(--red-text)':'var(--text3)'}" onclick="toggleCritical(${p.id},${pi},'${ref}')" title="${t.critical?'Remove critical flag':'Mark as critical'}">🚩</button>
+      <button class="btn" style="font-size:9px;padding:1px 5px;color:var(--text3)" onclick="startTaskNote(${p.id},${pi},'${ref}')" title="Add/edit note">📝</button>
+    </div>
+  </div>`;
+}
+
+function renderTaskList(p, ph, pi) {
+  const addKey = `add_${p.id}_${pi}`;
+  const isAdding = addKey in addingTaskState;
+  const addingGroupIdx = addingTaskState[addKey];
+  let html = '';
+
+  ph.tasks.forEach((t, ti) => {
+    if (t.isGroup) {
+      const open = isGroupOpen(p.id, pi, ti);
+      const gDone = t.tasks.filter(gt=>gt.done).length;
+      const gTotal = t.tasks.length;
+      const hasCrit = t.tasks.some(gt=>gt.critical&&!gt.done);
+      html += `<div class="tgroup">
+        <div class="tgroup-hdr" onclick="toggleGroup(${p.id},${pi},${ti})">
+          <span class="tgroup-chev ${open?'open':''}">&#9654;</span>
+          <span class="tgroup-name">${hasCrit?'🚩 ':''}${t.name}</span>
+          <span class="tgroup-count">${gDone}/${gTotal}${gDone===gTotal&&gTotal>0?' ✓':''}</span>
+        </div>
+        ${open?`<div class="tgroup-body">
+          ${t.tasks.map((gt,gti)=>renderTaskItem(p,ph,pi,gt,`g${ti}_${gti}`,1)).join('')}
+          ${isAdding&&addingGroupIdx===ti
+            ? `<div class="add-task-row" style="padding-left:18px"><input class="add-task-inp" id="ati_${p.id}_${pi}" placeholder="Task name…" onkeydown="commitAddTask(${p.id},${pi},event)" onblur="setTimeout(()=>cancelAddTask(${p.id},${pi}),150)"><button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onmousedown="event.preventDefault()" onclick="commitAddTask(${p.id},${pi})">Add</button></div>`
+            : `<div class="add-task-row" style="padding-left:18px"><button class="btn" style="font-size:10px;color:var(--text3)" onclick="startAddTask(${p.id},${pi},${ti})">+ Add task</button></div>`}
+        </div>`:''}
+      </div>`;
+    } else {
+      html += renderTaskItem(p, ph, pi, t, String(ti), 0);
+    }
+  });
+
+  // Inline add at phase level
+  if (isAdding && addingGroupIdx === null) {
+    html += `<div class="add-task-row"><input class="add-task-inp" id="ati_${p.id}_${pi}" placeholder="Task name…" onkeydown="commitAddTask(${p.id},${pi},event)" onblur="setTimeout(()=>cancelAddTask(${p.id},${pi}),150)"><button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onmousedown="event.preventDefault()" onclick="commitAddTask(${p.id},${pi})">Add</button></div>`;
+  } else if (!isAdding) {
+    html += `<div style="display:flex;gap:5px;margin-top:4px;padding:2px 0">
+      <button class="btn" style="font-size:10px;color:var(--text3)" onclick="startAddTask(${p.id},${pi})">+ Add task</button>
+      <button class="btn" style="font-size:10px;color:var(--text3)" onclick="startAddGroup(${p.id},${pi})">+ Add group</button>
+    </div>`;
+  }
+  return html;
+}
+
+function toggleTaskByRef(pId, pi, ref) {
+  const p = projects.find(x=>x.id===pId);
+  const t = resolveTask(p, pi, ref);
+  if (!t) return;
+  // Check if blocked
+  const ph = p.phases[pi];
+  const depTask = t.dependsOn ? allPhaseTasks(ph).find(x=>x.id===t.dependsOn) : null;
+  if (depTask && !depTask.done) return; // blocked
+  t.done = !t.done;
+  t.completedDate = t.done ? new Date().toISOString().split('T')[0] : null;
+  // Check if all phase tasks done
+  const allDone = allPhaseTasks(ph).every(x=>x.done);
+  if (allDone) { ph.done=true; ph.completedDate=new Date().toISOString().split('T')[0]; }
+  renderAll();
+  if (allDone) {
+    const nextPh = p.phases[pi+1];
+    if (nextPh && !nextPh.done) openScheduleModal(pId, pi, ph.completedDate);
+  }
+}
+
+function overduePhases() {
+  const r = [];
+  projects.forEach(p => {
+    p.phases.forEach(ph => {
+      if (!ph.done && ph.overdue) r.push({project:p, phase:ph, daysLate:Math.abs(daysDiff(ph.dueDate))});
+    });
+  });
+  return r;
+}
+
+function statusBadge(p) {
+  const hasOverdue = p.phases.some(ph => ph.overdue && !ph.done);
+  const pct = pctComplete(p);
+  if (pct === 100) return '<span class="badge b-success">Complete</span>';
+  if (hasOverdue) return '<span class="badge b-danger">Overdue</span>';
+  if (p.status === 'planning') return '<span class="badge b-gray">Planning</span>';
+  return '<span class="badge b-info">In progress</span>';
+}
+
+function phaseOwnerEmail(owner) {
+  return PARTNERS[owner]?.email || '';
+}
+
+// ─── METRICS ────────────────────────────────────────────────────────────────
+let drilldownProjectId = null;
+
+function renderMetrics() {
+  if (drilldownProjectId) {
+    const p = projects.find(x=>x.id===drilldownProjectId);
+    const ov = p.phases.filter(ph=>ph.overdue&&!ph.done).length;
+    const done = p.phases.filter(ph=>ph.done).length;
+    const allTasks = p.phases.flatMap(ph=>allPhaseTasks(ph));
+    const critical = allTasks.filter(t=>t.critical&&!t.done).length;
+    document.getElementById('metrics').innerHTML = `
+      <div class="mc" style="border-color:var(--accent)"><div class="lbl">Work complete</div><div class="val">${pctWork(p)}%</div></div>
+      <div class="mc" style="border-color:var(--accent)"><div class="lbl">Phases done</div><div class="val">${done}/${p.phases.length}</div></div>
+      <div class="mc" style="border-color:var(--accent)"><div class="lbl">Active phase</div><div class="val" style="font-size:13px">${activePhase(p).name}</div></div>
+      ${critical?`<div class="mc" style="border-color:var(--red)"><div class="lbl">Critical open</div><div class="val danger">${critical}</div></div>`:''}
+      <div class="mc" style="border-color:var(--accent)"><div class="lbl">Overdue phases</div><div class="val ${ov>0?'danger':''}">${ov}</div></div>`;
+    return;
+  }
+  const visibleProjects = currentRole==='client' ? projects.slice(0,1) : projects;
+  const ov = overduePhases().filter(({project:p})=>visibleProjects.includes(p)).length;
+  const active = visibleProjects.filter(p=>p.status==='active').length;
+  const phTotal = visibleProjects.reduce((s,p)=>s+p.phases.length,0);
+  const phDone  = visibleProjects.reduce((s,p)=>s+p.phases.filter(ph=>ph.done).length,0);
+  const critTotal = visibleProjects.reduce((s,p)=>s+p.phases.flatMap(ph=>allPhaseTasks(ph)).filter(t=>t.critical&&!t.done).length,0);
+  document.getElementById('metrics').innerHTML = `
+    <div class="mc"><div class="lbl">Total projects</div><div class="val">${visibleProjects.length}</div></div>
+    <div class="mc"><div class="lbl">Active projects</div><div class="val">${active}</div></div>
+    <div class="mc"><div class="lbl">Phases complete</div><div class="val">${phDone}/${phTotal}</div></div>
+    <div class="mc"><div class="lbl">Avg. progress</div><div class="val">${Math.round(visibleProjects.reduce((s,p)=>s+pctWork(p),0)/Math.max(visibleProjects.length,1))}%</div></div>
+    ${critTotal?`<div class="mc" style="border-color:var(--red)"><div class="lbl">Critical open</div><div class="val danger">${critTotal}</div></div>`:''}
+    <div class="mc"><div class="lbl">Overdue phases</div><div class="val ${ov>0?'danger':''}">${ov}</div></div>`;
+}
+
+// ─── PROJECT LIST ────────────────────────────────────────────────────────────
+function renderProjectList() {
+  // Client role: only show first project (in prod this would be their assigned project)
+  const visibleProjects = currentRole === 'client' ? projects.slice(0,1) : projects;
+  document.getElementById('project-list').innerHTML = visibleProjects.map(p => {
+    const ap = activePhase(p);
+    return `<div class="pcard ${p.id===selectedId?'sel':''}" onclick="selectProject(${p.id})" style="padding:0;overflow:hidden">
+      <div style="position:relative;height:90px;background:var(--bg3);overflow:hidden;cursor:pointer" ondblclick="event.stopPropagation();openDrilldown(${p.id})">
+        ${p.photo
+          ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;display:block">`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+              <div style="font-size:22px;opacity:0.25">🏗</div>
+            </div>`}
+        <label onclick="event.stopPropagation()" style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.45);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;cursor:pointer;backdrop-filter:blur(2px)">
+          ${p.photo ? '⟳ Change' : '+ Photo'}
+          <input type="file" accept="image/*" style="display:none" onchange="setProjectPhoto(${p.id},event)">
+        </label>
+        <div style="position:absolute;top:6px;right:6px">${statusBadge(p)}</div>
+      </div>
+      <div style="padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+        <div class="pname" ondblclick="event.stopPropagation();openDrilldown(${p.id})" title="Double-click to open full view" style="cursor:pointer">${p.name}</div>
+      </div>
+      <div class="psub">${p.address}</div>
+      <div style="display:flex;gap:5px;margin-bottom:6px">
+        <span class="badge ${p.type==='client'?'b-accent':'b-gray'}">${p.type==='client'?'Client Build':'Spec Build'}</span>
+        ${p.tier?`<span class="badge b-gray">${p.tier}</span>`:''}
+        ${p.planningIR==='yes'?'<span class="badge b-info">Planning IR</span>':''}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <div style="font-size:11px;color:var(--text2)">Phase ${ap.id}: ${ap.name}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <div style="font-size:10px;color:var(--text3);width:44px;flex-shrink:0">Work</div>
+        <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${pctWork(p)}%"></div></div>
+        <div class="prog-lbl">${pctWork(p)}%</div>
+      </div>
+      ${(()=>{const w=getWaitingOn(p);return w?'<div class="waiting-pill">⏳ Waiting on: '+(w.length>40?w.slice(0,39)+'…':w)+'</div>':''})()}
+      <button onclick="event.stopPropagation();openDrilldown(${p.id})" style="width:100%;margin-top:8px;background:var(--accent-bg);border:0.5px solid var(--accent);border-radius:var(--r);padding:6px;font-size:11px;cursor:pointer;color:var(--accent-dark);font-family:inherit;font-weight:500;transition:background .1s" onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='var(--accent-bg)';this.style.color='var(--accent-dark)'">Open full project view →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── DETAIL PANEL ────────────────────────────────────────────────────────────
+function renderDetail() {
+  const p = projects.find(x => x.id === selectedId);
+  if (!p) { document.getElementById('detail-panel').innerHTML=''; return; }
+
+  const phasesHTML = p.phases.map((ph, pi) => renderPhaseBlock(p, ph, pi)).join('');
+
+  document.getElementById('detail-panel').innerHTML = `
+    <div class="detail">
+      <div style="margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:2px">${p.name}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${p.type==='client'?'Client Build':'Spec Build'}${p.tier?' · '+p.tier:''} · ${p.address}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${p.planningIR==='yes'?'<span class="badge b-info">Planning IR required</span>':''}
+          ${p.planningIR==='no'?'<span class="badge b-gray">No Planning IR</span>':''}
+          ${p.planningIR==='unknown'?'<span class="badge b-warn">Planning IR: TBD</span>':''}
+        </div>
+      </div>
+      <div class="mini-metrics">
+        
+        <div class="mm"><div class="lbl">Work complete</div><div class="val">${pctWork(p)}%</div></div>
+        
+      </div>
+
+      <div class="sec-lbl">Phases</div>
+      ${phasesHTML}
+    </div>`;
+}
+
+function renderPhaseBlock(p, ph, pi) {
+  const gDone = ph.gateChecklist.filter(g=>g.done).length;
+  const gTotal = ph.gateChecklist.length;
+  const gateComplete = gDone === gTotal;
+  const noteKey = `${p.id}_${pi}`;
+  const isEditNote = editingNote[noteKey];
+  const log = reminderLog[`${p.id}_${ph.name}`] || [];
+
+  let taskCount = {done:0,total:0};
+  allPhaseTasks(ph).forEach(t => { taskCount.total++; if(t.done) taskCount.done++; });
+
+  const allTasksDone = taskCount.done === taskCount.total;
+  const someTasksDone = taskCount.done > 0 && !allTasksDone;
+  const checkCls = allTasksDone ? 'done' : someTasksDone ? 'partial' : '';
+  const isActive = !ph.done && p.phases.find(x=>!x.done) === ph;
+
+  let bodyHTML = '';
+  if (ph.open) {
+    if (ph.id === 5 && ph.parallelTracks) {
+      bodyHTML = renderPhase5Body(p, ph);
+    } else {
+      bodyHTML = `<div class="ph-body">
+        ${renderTaskList(p, ph, pi)}
+        <div class="gate-section">
+          <div class="gate-section-lbl">Phase gate checklist (${gDone}/${gTotal})</div>
+          ${ph.gateChecklist.map((g,gi) => `
+            <div class="gate-item">
+              <button class="gate-check ${g.done?'done':''}" onclick="toggleGate(${p.id},${pi},${gi})">${g.done?'✓':''}</button>
+              <span class="gate-lbl">${g.item}</span>
+            </div>`).join('')}
+        </div>
+        <div class="ph-footer">
+          ${ph.note && !isEditNote ? `<div class="note-disp"><strong style="font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-dark)">Note</strong><br>${ph.note}</div>` : ''}
+          ${!isEditNote ? `
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <button class="btn" onclick="startNote(${p.id},${pi})">${ph.note?'Edit note':'+ Add note'}</button>
+              
+              <button class="btn ${log.length?'':'btn-primary'}" onclick="draftAndLog(${p.id},'${ph.name}')">${log.length?'Send another reminder':'Send reminder'}</button>
+            </div>
+            ${log.length?`<div style="display:flex;flex-direction:column;gap:3px">${log.map(ts=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div><div style="font-size:11px;color:var(--text3)">Reminder sent — ${fmtTS(ts)}</div></div>`).join('')}</div>`:''}
+            ${renderFileAttachments(p.id, pi, null)}
+          ` : `
+            <div>
+              <textarea class="note-inp" id="ni-${noteKey}" placeholder="Add a note...">${ph.note}</textarea>
+              <div style="display:flex;gap:6px;margin-top:5px">
+                <button class="btn btn-primary" onclick="saveNote(${p.id},${pi})">Save</button>
+                <button class="btn" onclick="cancelNote(${p.id},${pi})">Cancel</button>
+                ${ph.note?`<button class="btn" style="color:var(--red-text)" onclick="deleteNote(${p.id},${pi})">Delete</button>`:''}
+              </div>
+            </div>`}
+        </div>
+      </div>`;
+    }
+  }
+
+  return `<div class="phase-block ${ph.overdue&&!ph.done?'late':''} ${isActive?'active-ph':''} ${ph.open?'open':''}">
+    <div class="ph-header" onclick="togglePhase(${p.id},${pi})">
+      <span class="chev">&#9654;</span>
+      <button class="ph-check ${checkCls}" onclick="event.stopPropagation();togglePhaseAllTasks(${p.id},${pi})">${allTasksDone?'✓':someTasksDone?'–':''}</button>
+      <div class="ph-info">
+        <div class="ph-name">
+          <span style="font-size:10px;color:var(--text3);font-weight:400">Ph.${ph.id}</span>
+          ${ph.name}
+          ${ph.overdue&&!ph.done?'<span class="badge b-danger">Overdue</span>':''}
+          ${isActive&&!ph.overdue?'<span class="badge b-accent">Active</span>':''}
+          ${ph.done?'<span class="badge b-success">Complete</span>':''}
+          ${ph.note?'<span class="badge b-gray">Note</span>':''}
+          ${(()=>{const n=Object.keys(ph.namedFiles||{}).length+(ph.extraFiles||[]).length;return n?`<span class="badge b-gray">📎 ${n}</span>`:'';})()} 
+          ${!gateComplete&&ph.open?`<span class="badge b-warn">Gate: ${gDone}/${gTotal}</span>`:''}
+          ${gateComplete?'<span class="badge b-success">Gate ✓</span>':''}
+        </div>
+        <div class="ph-meta">${PARTNERS[ph.owner]?.company||ph.owner}${ph.dueDate?' · Due '+fmtDate(ph.dueDate):''}${ph.done&&ph.completedDate?' · <span style="color:var(--green-text);cursor:pointer;text-decoration:underline dotted" onclick="editPhaseCompletedPrompt('+p.id+','+pi+')" title="Click to edit completion date">✓ Completed '+fmtDate(ph.completedDate)+' ✎</span>':''}</div>
+      </div>
+      </div>
+    </div>
+    ${bodyHTML}
+  </div>`;
+}
+
+function renderPhase5Body(p, ph) {
+  const pi = 4;
+  const noteKey = `${p.id}_${pi}`;
+  const isEditNote = editingNote[noteKey];
+  const log = reminderLog[`${p.id}_${ph.name}`] || [];
+  const {siteTrack, factoryTrack, assemblyTrack} = ph.parallelTracks;
+  const gDone = ph.gateChecklist.filter(g=>g.done).length;
+  const gTotal = ph.gateChecklist.length;
+
+  const renderTrackBlock = (tr, trackKey, trIdx) => {
+    const tDone = tr.tasks.filter(t=>t.done).length;
+    const allD = tDone===tr.tasks.length;
+    const someD = tDone>0&&!allD;
+    return `<div class="track-block ${tr.open?'open':''}">
+      <div class="track-header" onclick="toggleTrack(${p.id},'${trackKey}',${trIdx})">
+        <span class="chev" style="font-size:8px">&#9654;</span>
+        <button class="ph-check ${allD?'done':someD?'partial':''}" style="width:14px;height:14px;font-size:9px" onclick="event.stopPropagation();toggleTrackAll(${p.id},'${trackKey}',${trIdx})">${allD?'✓':someD?'–':''}</button>
+        <span class="track-name">${tr.name}</span>
+        ${tr.drawAmount?`<span style="font-size:10px;font-weight:600;color:var(--accent-dark)">${fmt(tr.drawAmount)}<span style="font-size:9px;color:var(--text3);font-weight:400"> ${tr.drawPaid?'paid':'pending'}</span></span>`:''}
+        <span class="track-meta">${tDone}/${tr.tasks.length}</span>
+      </div>
+      ${tr.open?`<div class="track-tasks">${tr.tasks.map((t,ti)=>{
+        const today = new Date().toISOString().split('T')[0];
+        const isLate = !t.done && t.dueDate && t.dueDate < today;
+        return `<div class="track-task" style="align-items:flex-start;padding:6px 10px 6px 22px">
+          <button class="tcheck ${t.done?'done':''}" style="width:12px;height:12px;font-size:8px;margin-top:2px" onclick="toggleTrackTask(${p.id},'${trackKey}',${trIdx},${ti})">${t.done?'✓':''}</button>
+          <div style="flex:1;min-width:0">
+            <div style="${t.done?'text-decoration:line-through;color:var(--text3)':''};font-size:11px">${t.name}</div>
+            <div style="font-size:10px;margin-top:1px">
+              ${t.done && t.completedDate
+                ? `<span style="color:var(--green-text);cursor:pointer;text-decoration:underline dotted" onclick="editTrackTaskCompletedPrompt(${p.id},'${trackKey}',${trIdx},${ti},event)" title="Click to edit completion date">✓ ${fmtDate(t.completedDate)} ✎</span>`
+                : t.dueDate
+                  ? `<span style="color:${isLate?'var(--red-text)':'var(--text3)'}">${isLate?'⚠ ':''} Due ${fmtDate(t.dueDate)} <span style="cursor:pointer" onclick="setTrackTaskDuePrompt(${p.id},'${trackKey}',${trIdx},${ti},event)">✎</span></span>`
+                  : `<span style="color:var(--text3);cursor:pointer;text-decoration:underline dotted" onclick="setTrackTaskDuePrompt(${p.id},'${trackKey}',${trIdx},${ti},event)">+ due date</span>`}
+            </div>
+          </div>
+        </div>`;}).join('')}
+        ${tr.inspections?`<div style="padding:4px 10px;display:flex;gap:4px;flex-wrap:wrap;border-top:0.5px solid var(--border)">
+          ${tr.inspections.map(ins=>`<span class="insp-tag">${ins.inspector}: ${ins.name}</span>`).join('')}
+        </div>`:''}
+      </div>`:''}
+    </div>`;
+  };
+
+  const site = siteTrack.map((tr,i)=>renderTrackBlock(tr,'siteTrack',i)).join('');
+  const factory = factoryTrack.map((tr,i)=>renderTrackBlock(tr,'factoryTrack',i)).join('');
+  const assembly = assemblyTrack.map((tr,i)=>renderTrackBlock(tr,'assemblyTrack',i)).join('');
+
+  return `<div class="ph-body">
+    <div class="parallel-track">
+      <div>
+        <div class="parallel-lbl">Site track — Greenberg + Neovi</div>
+        ${site}
+      </div>
+      <div>
+        <div class="parallel-lbl">Factory track — Neovi</div>
+        ${factory}
+      </div>
+      <div class="parallel-note">Fabrication timed to complete simultaneously with foundation — minimize panel storage</div>
+    </div>
+    <div style="padding:8px 12px;background:var(--bg2);border-top:0.5px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px">Assembly, Finishing & Turnover — Neovi + Greenberg</div>
+      <div style="display:flex;flex-direction:column;gap:6px">${assembly}</div>
+    </div>
+    <div class="gate-section">
+      <div class="gate-section-lbl">Turnover checklist (${gDone}/${gTotal})</div>
+      ${ph.gateChecklist.map((g,gi)=>`
+        <div class="gate-item">
+          <button class="gate-check ${g.done?'done':''}" onclick="toggleGate(${p.id},${pi},${gi})">${g.done?'✓':''}</button>
+          <span class="gate-lbl">${g.item}</span>
+        </div>`).join('')}
+    </div>
+    <div class="ph-footer">
+      ${ph.note&&!isEditNote?`<div class="note-disp">${ph.note}</div>`:''}
+      ${!isEditNote?`
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" onclick="startNote(${p.id},${pi})">${ph.note?'Edit note':'+ Add note'}</button>
+          <button class="btn ${log.length?'':'btn-primary'}" onclick="draftAndLog(${p.id},'${ph.name}')">${log.length?'Send another reminder':'Send reminder'}</button>
+        </div>
+        ${log.length?`<div style="display:flex;flex-direction:column;gap:3px">${log.map(ts=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div><div style="font-size:11px;color:var(--text3)">Reminder sent — ${fmtTS(ts)}</div></div>`).join('')}</div>`:''}
+        ${renderFileAttachments(p.id, pi, null)}
+      ` : `<div>
+          <textarea class="note-inp" id="ni-${noteKey}" placeholder="Add a note...">${ph.note}</textarea>
+          <div style="display:flex;gap:6px;margin-top:5px">
+            <button class="btn btn-primary" onclick="saveNote(${p.id},${pi})">Save</button>
+            <button class="btn" onclick="cancelNote(${p.id},${pi})">Cancel</button>
+          </div>
+        </div>`}
+    </div>
+  </div>`;
+}
+
+// ─── OVERDUE ────────────────────────────────────────────────────────────────
+// Track which project overdue sections are expanded
+const overdueExpanded = {};
+
+function toggleOverdueProject(pId) {
+  overdueExpanded[pId] = !overdueExpanded[pId];
+  renderOverdue();
+}
+
+function renderOverdue() {
+  const items = overduePhases();
+  if (!items.length) {
+    document.getElementById('overdue-list').innerHTML='<div style="text-align:center;color:var(--text2);padding:3rem 0;font-size:14px">No overdue phases — all on track.</div>';
+    return;
+  }
+
+  // Group by project
+  const byProject = {};
+  items.forEach(({project:p, phase:ph, daysLate}) => {
+    if (!byProject[p.id]) byProject[p.id] = {project:p, phases:[]};
+    byProject[p.id].phases.push({ph, daysLate});
+  });
+
+  // Summary bar
+  const totalOverdue = items.length;
+  const projectsAffected = Object.keys(byProject).length;
+
+  const summaryHTML = `
+    <div style="background:var(--red-bg);border:0.5px solid var(--red-border);border-radius:var(--rl);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:13px;font-weight:500;color:var(--red-text)">${totalOverdue} overdue phase${totalOverdue>1?'s':''} across ${projectsAffected} project${projectsAffected>1?'s':''}</div>
+      <div style="flex:1"></div>
+      <button class="btn" style="font-size:11px" onclick="Object.keys(overdueExpanded).forEach(k=>overdueExpanded[k]=false);renderOverdue()">Collapse all</button>
+      <button class="btn" style="font-size:11px" onclick="${Object.keys(byProject).map(id=>`overdueExpanded[${id}]=true`).join(';')};renderOverdue()">Expand all</button>
+    </div>`;
+
+  const projectsHTML = Object.values(byProject).map(({project:p, phases}) => {
+    const isOpen = overdueExpanded[p.id] !== false; // default open
+    if (overdueExpanded[p.id] === undefined) overdueExpanded[p.id] = true;
+    const worstDays = Math.max(...phases.map(x=>x.daysLate));
+    const totalReminders = phases.reduce((s,{ph})=>{
+      const key=`${p.id}_${ph.name}`;
+      return s+(reminderLog[key]||[]).length;
+    },0);
+
+    const phasesHTML = phases.map(({ph, daysLate}) => {
+      const owner = ph.owner;
+      const email = PARTNERS[owner]?.email||'';
+      const gDone = ph.gateChecklist.filter(g=>g.done).length;
+      const gTotal = ph.gateChecklist.length;
+      const key = `${p.id}_${ph.name}`;
+      const log = reminderLog[key]||[];
+      const autoTs = ph.autoSentAt||(ph.autoSentAt=new Date(ph.dueDate).getTime()+3600000);
+      const blockedTasks = ph.parallelTracks
+        ? Object.values(ph.parallelTracks).flat().flatMap(tr=>tr.tasks.filter(t=>!t.done).map(t=>t.name))
+        : ph.tasks.filter(t=>!t.done).map(t=>t.name);
+
+      return `<div style="border-top:0.5px solid var(--red-border);padding:12px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <div>
+            <div style="font-size:13px;font-weight:500">Ph.${ph.id}: ${ph.name}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:1px">${PARTNERS[owner]?.company||owner} · ${owner} · Was due ${fmtDate(ph.dueDate)}</div>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+            ${log.length?`<span class="badge b-accent">${log.length} sent</span>`:''}
+            <span class="badge b-danger">${daysLate}d late</span>
+          </div>
+        </div>
+        ${ph.note?`<div style="font-size:11px;color:var(--accent-dark);background:var(--accent-bg);padding:4px 8px;border-radius:var(--r);margin-bottom:6px">${ph.note}</div>`:''}
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Gate: ${gDone}/${gTotal} complete${blockedTasks.length ? ' · Blocked: '+blockedTasks.slice(0,2).join(', ')+(blockedTasks.length>2?' +'+(blockedTasks.length-2)+' more':'') : ''}</div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
+            <div style="font-size:11px;color:var(--text2)">Auto reminder sent — ${fmtTS(autoTs)}</div>
+          </div>
+          ${log.map(ts=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div><div style="font-size:11px;color:var(--text2)">Reminder sent — ${fmtTS(ts)}</div></div>`).join('')}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="draftAndLog(${p.id},'${ph.name}')">Send another</button>
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="markPhaseDone(${p.id},${ph.id-1})">Mark complete</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="background:var(--bg);border:1px solid var(--red-border);border-radius:var(--rl);margin-bottom:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:${isOpen?'var(--red-bg)':'var(--bg)'}" onclick="toggleOverdueProject(${p.id})">
+        <span style="font-size:9px;color:var(--red-text);transition:transform .15s;display:inline-block;transform:rotate(${isOpen?90:0}deg)">&#9654;</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--red-text)">${p.name}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px">${phases.length} overdue phase${phases.length>1?'s':''} · ${p.address}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          ${totalReminders?`<span class="badge b-accent">${totalReminders} reminder${totalReminders>1?'s':''} sent</span>`:''}
+          <span class="badge b-danger">${worstDays}d max</span>
+          <button class="btn" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openDrilldown(${p.id})">Open project →</button>
+        </div>
+      </div>
+      ${isOpen ? phasesHTML : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('overdue-list').innerHTML = summaryHTML + projectsHTML;
+}
+
+// ─── REVENUE ────────────────────────────────────────────────────────────────
+
+// ─── TEAM ────────────────────────────────────────────────────────────────────
+function renderTeam() {
+  const people = {
+    'Neovi PM':       {label:'Neovi PM',       company:'Neovi',       phases:['Ph.1 Kick Off','Ph.3 Design Dev','Ph.4 Permitting'],overdues:0},
+    'Spacial':        {label:'Dan (Design)',    company:'Spacial',     phases:['Ph.2 Schematic Design'],overdues:0},
+    'Spacial/Permit': {label:'Barbara (Permit)',company:'Spacial',     phases:['Ph.4 Municipal Permitting'],overdues:0},
+    'Greenberg':      {label:'Maor',            company:'Greenberg Construction',phases:['Ph.1 (site)','Ph.5 Site + Finishing'],overdues:0},
+    'ACE':            {label:'ACE Engineers',   company:'Advanced Consulting Engineers',phases:['Ph.3 Structural Engineering'],overdues:0},
+    'Vault Studio':   {label:'Vault Studio',    company:'Vault Studio',phases:['Ph.2 Finishes & Cabinetry'],overdues:0},
+    'Neovi Eng':      {label:'Amit (Engineering)',company:'Neovi',     phases:['Ph.3 Design Development'],overdues:0},
+    'Neovi Fab':      {label:'Francesca (Fab)', company:'Neovi',       phases:['Ph.5 Fabrication','Ph.5 Finishing'],overdues:0},
+    'Neovi Found':    {label:'Kyle (Foundation)',company:'Neovi',       phases:['Ph.5 Foundation'],overdues:0},
+    'Neovi Assembly': {label:'Didier (Assembly)',company:'Neovi',       phases:['Ph.5 Panel Assembly','Ph.5 Rough-in'],overdues:0},
+  };
+  overduePhases().forEach(({phase:ph}) => { if(people[ph.owner]) people[ph.owner].overdues++; });
+  document.getElementById('team-list').innerHTML = Object.values(people).map(m=>`
+    <div class="team-card">
+      <div class="avatar">${m.label[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${m.label}</div>
+        <div style="font-size:11px;color:var(--text2)">${m.company}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${m.phases.join(' · ')}</div>
+      </div>
+      ${m.overdues>0?`<span class="badge b-danger">${m.overdues} overdue</span>`:'<span class="badge b-success">On track</span>'}
+    </div>`).join('');
+}
+
+// ─── NOTIFICATION SCHEDULE (editable) ────────────────────────────────────────
+let notifSchedule = [
+  {id:'early',    color:'var(--green)', days:7,  label:'Early heads-up',    desc:'Heads-up to phase owner',                        enabled:true,  recipients:['Phase owner']},
+  {id:'urgent',   color:'#BA7517',      days:1,  label:'Urgent reminder',   desc:'Urgent reminder to phase owner + Neovi PM',      enabled:true,  recipients:['Phase owner','Neovi PM']},
+  {id:'overdue',  color:'var(--red)',   days:0,  label:'Day overdue',       desc:'Overdue alert + escalation to Neovi PM',         enabled:true,  recipients:['Phase owner','Neovi PM']},
+  {id:'repeat',   color:'var(--red)',   days:3,  label:'Repeat while overdue', desc:'Repeat every N days until phase marked complete', enabled:true, recipients:['Phase owner','Neovi PM'], isRepeat:true},
+];
+
+let editingNotifId = null;
+
+function renderNotifications() {
+  const schedHTML = notifSchedule.map(rule => {
+    const isEditing = editingNotifId === rule.id;
+    return `<div class="nrow" style="${!rule.enabled?'opacity:.45':''}">
+      <div class="ndot" style="background:${rule.color}"></div>
+      ${isEditing ? `
+        <div style="flex:1;display:flex;flex-direction:column;gap:7px;padding:4px 0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="font-size:11px;color:var(--text2);white-space:nowrap">${rule.isRepeat?'Repeat every':'Days before due:'}</label>
+            <input type="number" id="ne-days-${rule.id}" value="${rule.days}" min="0" max="90" style="width:60px;font-size:12px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);font-family:inherit">
+            <label style="font-size:11px;color:var(--text2)">days</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="font-size:11px;color:var(--text2)">Label:</label>
+            <input type="text" id="ne-lbl-${rule.id}" value="${rule.label}" style="flex:1;min-width:120px;font-size:12px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);font-family:inherit">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label style="font-size:11px;color:var(--text2)">Description:</label>
+            <input type="text" id="ne-desc-${rule.id}" value="${rule.desc}" style="flex:1;min-width:160px;font-size:12px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);font-family:inherit">
+          </div>
+          <div style="display:flex;gap:6px;margin-top:2px">
+            <button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="saveNotifRule('${rule.id}')">Save</button>
+            <button class="btn" style="font-size:11px;padding:3px 10px" onclick="cancelNotifEdit()">Cancel</button>
+          </div>
+        </div>` : `
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:500">${rule.isRepeat ? `Every ${rule.days} days while overdue` : rule.days === 0 ? 'Day becomes overdue' : `${rule.days} day${rule.days!==1?'s':''} before due date`}</div>
+          <div style="font-size:11px;color:var(--text2)">${rule.desc}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Sent to: ${rule.recipients.join(', ')}</div>
+        </div>`}
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${!isEditing ? `
+          <span class="badge b-info" style="font-size:10px">Auto</span>
+          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="startNotifEdit('${rule.id}')">Edit</button>
+          <button class="btn" style="font-size:10px;padding:2px 7px;color:${rule.enabled?'var(--red-text)':'var(--green-text)'}" onclick="toggleNotifRule('${rule.id}')">${rule.enabled?'Disable':'Enable'}</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('notif-view').innerHTML = `
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:14px">
+      <div style="padding:12px 14px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:500;margin-bottom:2px">Automated reminder schedule</div><div style="font-size:11px;color:var(--text2)">Emails fire automatically on server version — edit timing and recipients here</div></div>
+      </div>
+      ${schedHTML}
+    </div>
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;font-weight:500">Overdue — reminder history</div>
+      ${overduePhases().map(({project:p,phase:ph,daysLate})=>{
+        const owner=ph.owner; const email=PARTNERS[owner]?.email||'';
+        const key=`${p.id}_${ph.name}`; const log=reminderLog[key]||[];
+        const autoTs=ph.autoSentAt||(ph.autoSentAt=new Date(ph.dueDate).getTime()+3600000);
+        return `<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div><div style="font-size:12px;font-weight:500">${p.name} — ${ph.name}</div><div style="font-size:11px;color:var(--text2)">${PARTNERS[owner]?.company||owner}${email?' · '+email:''}</div></div>
+            <div style="display:flex;gap:5px;align-items:center"><span class="badge b-danger">${daysLate}d late</span><button class="btn btn-primary" onclick="draftAndLog(${p.id},'${ph.name}')" style="font-size:11px;padding:3px 8px">Send another</button></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:5px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div><div style="font-size:11px;color:var(--text3)">Reminder sent automatically — ${fmtTS(autoTs)}</div></div>
+            ${log.map(ts=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0"></div><div style="font-size:11px;color:var(--text3)">Reminder sent — ${fmtTS(ts)}</div></div>`).join('')}
+          </div>
+        </div>`;
+      }).join('') || '<div style="padding:14px;font-size:12px;color:var(--text2)">No overdue phases right now.</div>'}
+    </div>`;
+}
+
+function startNotifEdit(id) { editingNotifId=id; renderNotifications(); }
+function cancelNotifEdit() { editingNotifId=null; renderNotifications(); }
+function toggleNotifRule(id) { const r=notifSchedule.find(x=>x.id===id); if(r) r.enabled=!r.enabled; renderNotifications(); }
+function saveNotifRule(id) {
+  const r = notifSchedule.find(x=>x.id===id);
+  if (!r) return;
+  r.days = parseInt(document.getElementById(`ne-days-${id}`)?.value)||r.days;
+  r.label = document.getElementById(`ne-lbl-${id}`)?.value||r.label;
+  r.desc = document.getElementById(`ne-desc-${id}`)?.value||r.desc;
+  editingNotifId = null;
+  renderNotifications();
+}
+
+// ─── PORTFOLIO SCHEDULE ───────────────────────────────────────────────────────
+const PROJECT_COLORS = ['#C4A882','#5A8C5E','#378ADD','#C47A72','#BA7517','#7A5A9E'];
+
+// Set of selected project IDs. Empty = show portfolio (all projects)
+let selectedScheduleProjects = new Set();
+
+function toggleScheduleProject(pId) {
+  if (pId === 'portfolio') {
+    selectedScheduleProjects.clear();
+  } else {
+    if (selectedScheduleProjects.has(pId)) {
+      selectedScheduleProjects.delete(pId);
+    } else {
+      selectedScheduleProjects.add(pId);
+    }
+  }
+  renderSchedule();
+}
+
+function renderSchedule() {
+  if (selectedScheduleProjects.size === 0) {
+    renderSchedulePortfolio();
+  } else if (selectedScheduleProjects.size === 1) {
+    renderScheduleProject([...selectedScheduleProjects][0]);
+  } else {
+    renderScheduleMulti([...selectedScheduleProjects]);
+  }
+}
+
+function renderScheduleMulti(pIds) {
+  // Render each selected project's Gantt stacked — reuse renderScheduleProject logic but combined
+  const today = '2026-04-10';
+  const selectedProjects = pIds.map(id => projects.find(x=>x.id===id)).filter(Boolean);
+
+  const allDates = selectedProjects.flatMap(p =>
+    p.phases.flatMap(ph => [ph.startDate, ph.dueDate, ph.completedDate].filter(Boolean))
+  );
+  if (!allDates.length) { document.getElementById('schedule-view').innerHTML = scheduleNav() + '<p style="color:var(--text2);padding:2rem">No schedule data.</p>'; return; }
+
+  const minDate = allDates.reduce((a,b)=>a<b?a:b);
+  const maxDate = allDates.reduce((a,b)=>a>b?a:b);
+  const span = Math.max(daysBetween(minDate,maxDate),1);
+  const todayPct = Math.max(0,Math.min(100,daysBetween(minDate,today)/span*100));
+  const LABEL_W=110, CHART_W=680, ROW_H=26, PHASE_H=17;
+
+  const months=[];
+  let cur=new Date(minDate); cur.setDate(1);
+  while(cur.toISOString().split('T')[0]<=maxDate){
+    const pct=daysBetween(minDate,cur.toISOString().split('T')[0])/span*100;
+    if(pct>=0&&pct<=100) months.push({label:cur.toLocaleDateString('en-US',{month:'short',year:'2-digit'}),pct});
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  const svgRows=[]; let y=28;
+  selectedProjects.forEach((p,pi) => {
+    const color = PROJECT_COLORS[projects.indexOf(p) % PROJECT_COLORS.length];
+    const pStart = p.phases[0]?.startDate;
+    const pEnd = p.phases[p.phases.length-1]?.completedDate||p.phases[p.phases.length-1]?.dueDate;
+    if (!pStart||!pEnd) return;
+    const x1=Math.max(0,daysBetween(minDate,pStart)/span*100);
+    const x2=Math.min(100,daysBetween(minDate,pEnd)/span*100);
+    const pct=pctWork(p);
+    const overdue=p.phases.some(ph=>ph.overdue&&!ph.done);
+    // Project header row
+    svgRows.push(`
+      <rect x="${LABEL_W+x1/100*CHART_W}" y="${y+2}" width="${Math.max((x2-x1)/100*CHART_W,4)}" height="${ROW_H-4}" rx="3" fill="${color}" opacity="0.15"/>
+      <rect x="${LABEL_W+x1/100*CHART_W}" y="${y+2}" width="${Math.max((x2-x1)/100*CHART_W*pct/100,2)}" height="${ROW_H-4}" rx="3" fill="${color}"/>
+      <text x="4" y="${y+ROW_H/2+1}" font-size="11" font-weight="500" fill="${overdue?'#C47A72':'var(--text)'}" dominant-baseline="middle">${p.name}</text>
+      <text x="${LABEL_W-4}" y="${y+ROW_H/2+1}" font-size="9" fill="var(--text3)" dominant-baseline="middle" text-anchor="end">${pct}%</text>
+    `);
+    y+=ROW_H;
+    // Phase rows
+    p.phases.forEach(ph => {
+      const s=ph.startDate, e=ph.completedDate||ph.dueDate;
+      if(!s||!e) return;
+      const px1=Math.max(0,daysBetween(minDate,s)/span*100);
+      const px2=Math.min(100,daysBetween(minDate,e)/span*100);
+      const phColor=ph.done?'#5A8C5E':ph.overdue?'#C47A72':color;
+      svgRows.push(`
+        <rect x="${LABEL_W+px1/100*CHART_W}" y="${y+3}" width="${Math.max((px2-px1)/100*CHART_W,3)}" height="${PHASE_H-5}" rx="2" fill="${phColor}" opacity="${ph.done?'0.7':ph.overdue?'0.9':'0.45'}"/>
+        <text x="18" y="${y+PHASE_H/2+1}" font-size="9" fill="var(--text3)" dominant-baseline="middle">Ph.${ph.id} ${ph.name}</text>
+      `);
+      y+=PHASE_H;
+    });
+    y+=10; // gap between projects
+  });
+
+  const totalH=y+10;
+  const grid=months.map(m=>`<line x1="${LABEL_W+m.pct/100*CHART_W}" y1="18" x2="${LABEL_W+m.pct/100*CHART_W}" y2="${totalH}" stroke="var(--border)" stroke-width="0.5"/><text x="${LABEL_W+m.pct/100*CHART_W+2}" y="13" font-size="9" fill="var(--text3)">${m.label}</text>`).join('');
+
+  document.getElementById('schedule-view').innerHTML=`
+    ${scheduleNav()}
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:15px;font-weight:600">Comparing ${selectedProjects.length} projects</div>
+          <div style="font-size:12px;color:var(--text2)">${selectedProjects.map(p=>p.name).join(' · ')}</div>
+        </div>
+        <div style="display:flex;gap:10px">${selectedProjects.map(p=>{
+          const i=projects.indexOf(p);
+          return `<div style="display:flex;align-items:center;gap:4px"><div style="width:9px;height:9px;border-radius:2px;background:${PROJECT_COLORS[i%PROJECT_COLORS.length]}"></div><span style="font-size:11px;color:var(--text2)">${p.name}</span></div>`;
+        }).join('')}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <svg width="${LABEL_W+CHART_W+20}" height="${totalH}" style="font-family:inherit;display:block">
+          ${grid}
+          <line x1="${LABEL_W+todayPct/100*CHART_W}" y1="0" x2="${LABEL_W+todayPct/100*CHART_W}" y2="${totalH}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="${LABEL_W+todayPct/100*CHART_W+2}" y="13" font-size="9" fill="var(--red-text)" font-weight="500">Today</text>
+          ${svgRows.join('')}
+        </svg>
+      </div>
+    </div>`;
+}
+
+function renderSchedulePortfolio() {
+  const today = '2026-04-10';
+  const allDates = projects.flatMap(p=>p.phases.flatMap(ph=>[ph.startDate,ph.dueDate,ph.completedDate].filter(Boolean)));
+  if (!allDates.length){document.getElementById('schedule-view').innerHTML='<p style="color:var(--text2);padding:2rem">No schedule data.</p>';return;}
+  const minDate=allDates.reduce((a,b)=>a<b?a:b);
+  const maxDate=allDates.reduce((a,b)=>a>b?a:b);
+  const span=Math.max(daysBetween(minDate,maxDate),1);
+  const todayPct=Math.max(0,Math.min(100,daysBetween(minDate,today)/span*100));
+  const LABEL_W=110,CHART_W=700,ROW_H=28,PHASE_H=18;
+  const months=[];
+  let cur=new Date(minDate);cur.setDate(1);
+  while(cur.toISOString().split('T')[0]<=maxDate){
+    const pct=daysBetween(minDate,cur.toISOString().split('T')[0])/span*100;
+    if(pct>=0&&pct<=100)months.push({label:cur.toLocaleDateString('en-US',{month:'short',year:'2-digit'}),pct});
+    cur.setMonth(cur.getMonth()+1);
+  }
+  const svgRows=[];let y=28;
+  projects.forEach((p,pi)=>{
+    const color=PROJECT_COLORS[pi%PROJECT_COLORS.length];
+    const pStart=p.phases[0]?.startDate,pEnd=p.phases[p.phases.length-1]?.completedDate||p.phases[p.phases.length-1]?.dueDate;
+    if(!pStart||!pEnd)return;
+    const x1=Math.max(0,daysBetween(minDate,pStart)/span*100);
+    const x2=Math.min(100,daysBetween(minDate,pEnd)/span*100);
+    const overdue=p.phases.some(ph=>ph.overdue&&!ph.done);
+    const pct=pctWork(p);
+    svgRows.push(`
+      <rect x="${LABEL_W+x1/100*CHART_W}" y="${y+2}" width="${Math.max((x2-x1)/100*CHART_W,4)}" height="${ROW_H-5}" rx="4" fill="${color}" opacity="0.2"/>
+      <rect x="${LABEL_W+x1/100*CHART_W}" y="${y+2}" width="${Math.max((x2-x1)/100*CHART_W*pct/100,2)}" height="${ROW_H-5}" rx="4" fill="${color}"/>
+      <text x="4" y="${y+ROW_H/2+1}" font-size="11" font-weight="500" fill="${overdue?'#C47A72':'var(--text)'}" dominant-baseline="middle">${p.name}</text>
+      <text x="${LABEL_W-4}" y="${y+ROW_H/2+1}" font-size="9" fill="var(--text3)" dominant-baseline="middle" text-anchor="end">${pct}%</text>
+      ${overdue?`<circle cx="${LABEL_W+x2/100*CHART_W+6}" cy="${y+ROW_H/2}" r="4" fill="#C47A72"/>`:''}
+    `);
+    y+=ROW_H;
+    p.phases.forEach(ph=>{
+      const s=ph.startDate,e=ph.completedDate||ph.dueDate;
+      if(!s||!e)return;
+      const px1=Math.max(0,daysBetween(minDate,s)/span*100);
+      const px2=Math.min(100,daysBetween(minDate,e)/span*100);
+      const phColor=ph.done?'#5A8C5E':ph.overdue?'#C47A72':color;
+      const opacity=ph.done?'0.7':ph.overdue?'0.9':'0.4';
+      svgRows.push(`
+        <rect x="${LABEL_W+px1/100*CHART_W}" y="${y+3}" width="${Math.max((px2-px1)/100*CHART_W,3)}" height="${PHASE_H-5}" rx="2" fill="${phColor}" opacity="${opacity}"/>
+        <text x="20" y="${y+PHASE_H/2+1}" font-size="9" fill="var(--text3)" dominant-baseline="middle">Ph.${ph.id} ${ph.name}</text>
+      `);
+      y+=PHASE_H;
+    });
+    y+=8;
+  });
+  const totalH=y+10;
+  const grid=months.map(m=>`<line x1="${LABEL_W+m.pct/100*CHART_W}" y1="18" x2="${LABEL_W+m.pct/100*CHART_W}" y2="${totalH}" stroke="var(--border)" stroke-width="0.5"/><text x="${LABEL_W+m.pct/100*CHART_W+2}" y="13" font-size="9" fill="var(--text3)">${m.label}</text>`).join('');
+
+  document.getElementById('schedule-view').innerHTML=`
+    ${scheduleNav()}
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div><div style="font-size:15px;font-weight:600">All projects</div><div style="font-size:12px;color:var(--text2)">Portfolio timeline · phases and progress</div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">${projects.map((p,i)=>`<div style="display:flex;align-items:center;gap:4px"><div style="width:9px;height:9px;border-radius:2px;background:${PROJECT_COLORS[i%PROJECT_COLORS.length]}"></div><span style="font-size:11px;color:var(--text2)">${p.name}</span></div>`).join('')}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <svg width="${LABEL_W+CHART_W+20}" height="${totalH}" style="font-family:inherit;display:block">
+          ${grid}
+          <line x1="${LABEL_W+todayPct/100*CHART_W}" y1="0" x2="${LABEL_W+todayPct/100*CHART_W}" y2="${totalH}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="${LABEL_W+todayPct/100*CHART_W+2}" y="13" font-size="9" fill="var(--red-text)" font-weight="500">Today</text>
+          ${svgRows.join('')}
+        </svg>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${projects.map((p,i)=>{
+        const ap=activePhase(p);
+        const pEnd=p.phases[p.phases.length-1]?.completedDate||p.phases[p.phases.length-1]?.dueDate;
+        const rem=pEnd?daysBetween(today,pEnd):null;
+        return `<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:11px 13px;cursor:pointer" onclick="toggleScheduleProject(${p.id})">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${PROJECT_COLORS[i%PROJECT_COLORS.length]};flex-shrink:0"></div>
+            <div style="font-size:13px;font-weight:500">${p.name}</div>${statusBadge(p)}
+          </div>
+          <div style="font-size:11px;color:var(--text2)">Active: Ph.${ap.id} ${ap.name}</div>
+          <div style="font-size:11px;color:var(--text2)">${rem!==null?(rem>0?rem+'d remaining':'Past projected end'):'—'}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px">
+            <div style="flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pctWork(p)}%;background:${PROJECT_COLORS[i%PROJECT_COLORS.length]};border-radius:2px"></div></div>
+            <div style="font-size:10px;color:var(--text2)">${pctWork(p)}%</div>
+          </div>
+          <div style="font-size:10px;color:var(--accent-dark);margin-top:5px">View schedule →</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderScheduleProject(pId) {
+  const p = projects.find(x=>x.id===pId);
+  if (!p) { selectedScheduleProjects.clear(); renderSchedule(); return; }
+  const today = '2026-04-10';
+  const pi = projects.indexOf(p);
+  const color = PROJECT_COLORS[pi % PROJECT_COLORS.length];
+
+  // Build all rows: phases + tracks
+  const rows = [];
+  p.phases.forEach(ph => {
+    if (ph.id < 5) {
+      rows.push({label:`Ph.${ph.id}: ${ph.name}`, start:ph.startDate, end:ph.completedDate||ph.dueDate, due:ph.dueDate, done:ph.done, overdue:ph.overdue&&!ph.done, indent:0, isPhase:true, phaseId:ph.id});
+      // Task rows
+      ph.tasks.forEach(t => {
+        if (t.dueDate || t.completedDate) {
+          rows.push({label:t.name, start:t.completedDate?addDays(t.completedDate,-1):addDays(t.dueDate,-2), end:t.completedDate||t.dueDate, due:t.dueDate, done:t.done, overdue:!t.done&&t.dueDate&&t.dueDate<today, indent:1, isTask:true});
+        }
+      });
+    } else {
+      rows.push({label:'Ph.5: Construction', start:ph.startDate, end:ph.dueDate, done:ph.done, overdue:false, indent:0, isPhase:true, isHeader:true});
+      if (ph.parallelTracks) {
+        Object.values(ph.parallelTracks).flat().forEach(tr => {
+          if (!tr.startDate) return;
+          rows.push({label:tr.name, start:tr.startDate, end:tr.completedDate||tr.dueDate, due:tr.dueDate, done:tr.done, overdue:false, indent:1, isTrack:true});
+          tr.tasks.forEach(t => {
+            if (t.dueDate||t.completedDate) {
+              rows.push({label:t.name, start:t.completedDate?addDays(t.completedDate,-1):addDays(t.dueDate,-2), end:t.completedDate||t.dueDate, due:t.dueDate, done:t.done, overdue:!t.done&&t.dueDate&&t.dueDate<today, indent:2, isTask:true});
+            }
+          });
+        });
+      }
+    }
+  });
+
+  const allDates = rows.flatMap(r=>[r.start,r.end]).filter(Boolean);
+  if (!allDates.length){document.getElementById('schedule-view').innerHTML=scheduleNav()+'<p style="color:var(--text2);padding:2rem">No schedule data for this project yet.</p>';return;}
+
+  const minDate=allDates.reduce((a,b)=>a<b?a:b);
+  const maxDate=allDates.reduce((a,b)=>a>b?a:b);
+  const span=Math.max(daysBetween(minDate,maxDate),1);
+  const todayPct=Math.max(0,Math.min(100,daysBetween(minDate,today)/span*100));
+
+  const LABEL_W=160,CHART_W=620,ROW_H=22;
+  const months=[];
+  let cur=new Date(minDate);cur.setDate(1);
+  while(cur.toISOString().split('T')[0]<=maxDate){
+    const pct=daysBetween(minDate,cur.toISOString().split('T')[0])/span*100;
+    if(pct>=0&&pct<=100)months.push({label:cur.toLocaleDateString('en-US',{month:'short',year:'2-digit'}),pct});
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  let y=28;
+  const bars = rows.map(r => {
+    if (!r.start||!r.end) { y+=ROW_H; return ''; }
+    const x1=Math.max(0,daysBetween(minDate,r.start)/span*100);
+    const x2=Math.min(100,daysBetween(minDate,r.end)/span*100);
+    const w=Math.max((x2-x1)/100*CHART_W,3);
+    const barH = r.indent===0?14:r.indent===1?10:7;
+    const barY = y+(ROW_H-barH)/2;
+    const lx = r.indent===0?4:r.indent===1?14:22;
+    const barColor = r.done?'#5A8C5E':r.overdue?'#C47A72':r.isHeader?'#888':color;
+    const opacity = r.done?'0.8':r.isHeader?'0.15':'0.85';
+    const lcolor = r.isHeader?'var(--text2)':r.overdue?'#C47A72':r.done?'#5A8C5E':'var(--text)';
+    const fsize = r.indent===0?'11':r.indent===1?'10':'9';
+    const fw = r.indent===0?'500':'400';
+    const label = r.label.length>(r.indent===0?22:r.indent===1?20:18)?r.label.slice(0,r.indent===0?21:19)+'…':r.label;
+    const row = `
+      <text x="${lx}" y="${y+ROW_H/2+1}" font-size="${fsize}" font-weight="${fw}" fill="${lcolor}" dominant-baseline="middle">${label}</text>
+      ${!r.isHeader?`<rect x="${LABEL_W+x1/100*CHART_W}" y="${barY}" width="${w}" height="${barH}" rx="2" fill="${barColor}" opacity="${opacity}"/>
+      ${r.done&&r.completedDate?`<line x1="${LABEL_W+x2/100*CHART_W}" y1="${barY}" x2="${LABEL_W+x2/100*CHART_W}" y2="${barY+barH}" stroke="white" stroke-width="1.5" opacity="0.7"/>`:''}
+      ${r.due&&!r.done?`<line x1="${LABEL_W+Math.min(100,daysBetween(minDate,r.due)/span*100)/100*CHART_W}" y1="${barY}" x2="${LABEL_W+Math.min(100,daysBetween(minDate,r.due)/span*100)/100*CHART_W}" y2="${barY+barH}" stroke="${r.overdue?'#C47A72':'var(--accent)'}" stroke-width="1" stroke-dasharray="2,1"/>`:''}
+      `:''}
+    `;
+    y += ROW_H;
+    return row;
+  }).join('');
+
+  const totalH=y+10;
+  const grid=months.map(m=>`<line x1="${LABEL_W+m.pct/100*CHART_W}" y1="18" x2="${LABEL_W+m.pct/100*CHART_W}" y2="${totalH}" stroke="var(--border)" stroke-width="0.5"/><text x="${LABEL_W+m.pct/100*CHART_W+2}" y="13" font-size="9" fill="var(--text3)">${m.label}</text>`).join('');
+
+  // Summary stats
+  const ap = activePhase(p);
+  const pEnd = p.phases[p.phases.length-1]?.completedDate||p.phases[p.phases.length-1]?.dueDate;
+  const rem = pEnd ? daysBetween(today, pEnd) : null;
+  const overduePh = p.phases.filter(ph=>ph.overdue&&!ph.done);
+
+  document.getElementById('schedule-view').innerHTML=`
+    ${scheduleNav(pId)}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+      <div class="mc"><div class="lbl">Work complete</div><div class="val">${pctWork(p)}%</div></div>
+      <div class="mc"><div class="lbl">Active phase</div><div class="val" style="font-size:14px">Ph.${ap.id}: ${ap.name}</div></div>
+      <div class="mc"><div class="lbl">Est. completion</div><div class="val" style="font-size:14px">${pEnd?fmtDate(pEnd):'—'}</div></div>
+      <div class="mc"><div class="lbl">${rem!==null&&rem>0?'Days remaining':'Overdue phases'}</div><div class="val ${overduePh.length?'danger':''}">${rem!==null&&rem>0?rem:overduePh.length}</div></div>
+    </div>
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:600;margin-bottom:3px">${p.name} — full schedule</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">${p.address} · ${p.type==='client'?'Client Build':'Spec Build'}${p.tier?' · '+p.tier:''}</div>
+      <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:6px;background:#5A8C5E;border-radius:1px"></div><span style="font-size:10px;color:var(--text2)">Complete</span></div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:6px;background:${color};border-radius:1px"></div><span style="font-size:10px;color:var(--text2)">Active/upcoming</span></div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:6px;background:#C47A72;border-radius:1px"></div><span style="font-size:10px;color:var(--text2)">Overdue</span></div>
+        <div style="display:flex;align-items:center;gap:4px"><div style="width:2px;height:10px;background:var(--red)"></div><span style="font-size:10px;color:var(--text2)">Today</span></div>
+      </div>
+      <div style="overflow-x:auto">
+        <svg width="${LABEL_W+CHART_W+20}" height="${totalH}" style="font-family:inherit;display:block">
+          ${grid}
+          <line x1="${LABEL_W+todayPct/100*CHART_W}" y1="0" x2="${LABEL_W+todayPct/100*CHART_W}" y2="${totalH}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="${LABEL_W+todayPct/100*CHART_W+2}" y="13" font-size="9" fill="var(--red-text)" font-weight="500">Today</text>
+          ${bars}
+        </svg>
+      </div>
+    </div>`;
+}
+
+function scheduleNav() {
+  const noneSelected = selectedScheduleProjects.size === 0;
+  const items = [{id:'portfolio', label:'All projects'}].concat(projects.map(p=>({id:p.id, label:p.name})));
+  const hint = projects.length > 8 ? '<div style="font-size:10px;color:var(--text3);padding:4px 0">Many projects — a dropdown will be added if needed.</div>' : '';
+  return `<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border)">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${items.map(item=>{
+        const isAll = item.id==='portfolio';
+        const isActive = isAll ? noneSelected : selectedScheduleProjects.has(item.id);
+        const onclickVal = item.id === 'portfolio' ? "'portfolio'" : item.id;
+        return `<button onclick="toggleScheduleProject(${onclickVal})" style="background:${isActive?'var(--accent)':'var(--bg)'};color:${isActive?'#fff':'var(--text2)'};border:0.5px solid ${isActive?'var(--accent)':'var(--border2)'};border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .1s">${item.label}</button>`;
+      }).join('')}
+    </div>
+    ${selectedScheduleProjects.size > 1 ? `<div style="font-size:11px;color:var(--text2);margin-top:6px">Comparing ${selectedScheduleProjects.size} projects — <button onclick="selectedScheduleProjects.clear();renderSchedule()" style="background:none;border:none;cursor:pointer;color:var(--accent-dark);font-size:11px;font-family:inherit;text-decoration:underline">clear</button></div>` : ''}
+    ${hint}
+  </div>`;
+}
+
+// ─── FACTORY SCHEDULE ────────────────────────────────────────────────────────
+function renderFactory() {
+  const today='2026-04-10';
+  const slots=projects.map((p,pi)=>{
+    const ph5=p.phases[4];
+    if(!ph5?.parallelTracks)return null;
+    const fab=ph5.parallelTracks.factoryTrack?.find(t=>t.id==='fabrication');
+    if(!fab||!fab.startDate)return null;
+    return{projectId:p.id,projectName:p.name,start:fab.startDate,end:fab.completedDate||fab.dueDate,done:fab.done,color:PROJECT_COLORS[pi%PROJECT_COLORS.length]};
+  }).filter(Boolean);
+  const conflicts=[];
+  for(let i=0;i<slots.length;i++)for(let j=i+1;j<slots.length;j++){
+    const a=slots[i],b=slots[j];
+    if(a.start<=b.end&&b.start<=a.end)conflicts.push({a:a.projectName,b:b.projectName});
+  }
+  const allDates=slots.flatMap(s=>[s.start,s.end]).filter(Boolean);
+  if(!allDates.length){document.getElementById('factory-view').innerHTML='<p style="color:var(--text2);padding:2rem">No fabrication slots scheduled yet. Projects reach fabrication in Phase 5.</p>';return;}
+  const minDate=allDates.reduce((a,b)=>a<b?a:b);
+  const maxDate=addDays(allDates.reduce((a,b)=>a>b?a:b),20);
+  const span=Math.max(daysBetween(minDate,maxDate),1);
+  const todayPct=Math.max(0,Math.min(100,daysBetween(minDate,today)/span*100));
+  const LW=100,CW=680,RH=42,SVG_H=slots.length*RH+36;
+  const months=[];let cur=new Date(minDate);cur.setDate(1);
+  while(cur.toISOString().split('T')[0]<=maxDate){
+    const pct=daysBetween(minDate,cur.toISOString().split('T')[0])/span*100;
+    if(pct>=0&&pct<=100)months.push({label:cur.toLocaleDateString('en-US',{month:'short',year:'2-digit'}),pct});
+    cur.setMonth(cur.getMonth()+1);
+  }
+  const bars=slots.map((s,i)=>{
+    const x1=Math.max(0,daysBetween(minDate,s.start)/span*100);
+    const x2=Math.min(100,daysBetween(minDate,s.end)/span*100);
+    const dur=daysBetween(s.start,s.end);
+    const y=i*RH+24;
+    const hasConflict=conflicts.some(c=>c.a===s.projectName||c.b===s.projectName);
+    return`<text x="4" y="${y+RH/2-2}" font-size="11" font-weight="500" fill="${hasConflict?'#C47A72':'var(--text)'}" dominant-baseline="middle">${s.projectName}</text>
+      <rect x="${LW+x1/100*CW}" y="${y+4}" width="${Math.max((x2-x1)/100*CW,6)}" height="${RH-10}" rx="4" fill="${s.color}" opacity="${s.done?'0.5':'0.9'}"/>
+      ${hasConflict?`<rect x="${LW+x1/100*CW}" y="${y+4}" width="${Math.max((x2-x1)/100*CW,6)}" height="${RH-10}" rx="4" fill="none" stroke="#C47A72" stroke-width="2"/>`:''}
+      <text x="${LW+x1/100*CW+7}" y="${y+RH/2-3}" font-size="10" fill="white" dominant-baseline="middle">${dur}d${s.done?' ✓':''}</text>
+      <text x="${LW+x1/100*CW+7}" y="${y+RH/2+7}" font-size="9" fill="rgba(255,255,255,0.8)" dominant-baseline="middle">${fmtDate(s.start)} – ${fmtDate(s.end)}</text>`;
+  }).join('');
+  const grid=months.map(m=>`<line x1="${LW+m.pct/100*CW}" y1="18" x2="${LW+m.pct/100*CW}" y2="${SVG_H}" stroke="var(--border)" stroke-width="0.5"/><text x="${LW+m.pct/100*CW+2}" y="13" font-size="9" fill="var(--text3)">${m.label}</text>`).join('');
+  document.getElementById('factory-view').innerHTML=`
+    ${conflicts.length?`<div class="conflict-badge">⚠ ${conflicts.length} fabrication conflict${conflicts.length>1?'s':''}: ${conflicts.map(c=>`${c.a} + ${c.b}`).join(' · ')} — overlapping slots. Adjust schedule to resolve.</div>`:`<div style="background:var(--green-bg);border:0.5px solid var(--green-text);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--green-text)">✓ No fabrication conflicts — all slots are clear</div>`}
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:600;margin-bottom:3px">Factory production schedule</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Fabrication slots across all active projects · One factory — sequencing matters</div>
+      <div style="overflow-x:auto">
+        <svg width="${LW+CW+20}" height="${SVG_H}" style="font-family:inherit;display:block">
+          ${grid}
+          <line x1="${LW+todayPct/100*CW}" y1="0" x2="${LW+todayPct/100*CW}" y2="${SVG_H}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="${LW+todayPct/100*CW+2}" y="13" font-size="9" fill="var(--red-text)" font-weight="500">Today</text>
+          ${bars}
+        </svg>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${slots.map(s=>`<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:11px 13px">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+          <div style="width:10px;height:10px;border-radius:2px;background:${s.color}"></div>
+          <div style="font-size:13px;font-weight:500">${s.projectName}</div>
+          ${s.done?'<span class="badge b-success">Done</span>':'<span class="badge b-info">Scheduled</span>'}
+        </div>
+        <div style="font-size:11px;color:var(--text2)">Start: ${fmtDate(s.start)}</div>
+        <div style="font-size:11px;color:var(--text2)">End: ${fmtDate(s.end)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${daysBetween(s.start,s.end)} days</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ─── CLIENT VIEW ─────────────────────────────────────────────────────────────
+
+// ─── SCHEDULE MODAL ──────────────────────────────────────────────────────────
+function openScheduleModal(pId, completedPi, completedDate) {
+  const p = projects.find(x=>x.id===pId);
+  const completedPh = p.phases[completedPi];
+  const nextPi = completedPi + 1;
+  const nextPh = p.phases[nextPi];
+  if (!nextPh) return;
+
+  const dur = PHASE_DURATIONS[nextPh.name] || 30;
+  const suggested = addDays(completedDate, dur);
+
+  document.getElementById('sm-title').textContent = `Ph.${completedPh.id} complete — schedule next phase`;
+  document.getElementById('sm-completed-msg').textContent = `✓ ${completedPh.name} completed ${fmtDate(completedDate)}`;
+  document.getElementById('sm-next-msg').innerHTML = `Next up: <strong>Ph.${nextPh.id}: ${nextPh.name}</strong><br><span style="font-size:12px;color:var(--text2)">Owner: ${PARTNERS[nextPh.owner]?.company||nextPh.owner}</span>`;
+  document.getElementById('sm-calc-note').textContent = `Suggested: ${fmtDate(completedDate)} + ${dur} days (default) = ${fmtDate(suggested)}`;
+  document.getElementById('sm-task-note').textContent = `${nextPh.tasks.length} tasks will be spaced over ${dur} days`;
+  document.getElementById('sm-date').value = suggested;
+  document.getElementById('sm-pid').value = pId;
+  document.getElementById('sm-next-pi').value = nextPi;
+  document.getElementById('schedule-modal').classList.add('open');
+}
+
+function closeScheduleModal() {
+  document.getElementById('schedule-modal').classList.remove('open');
+}
+
+function acceptSchedule() {
+  const pId = parseInt(document.getElementById('sm-pid').value);
+  const nextPi = parseInt(document.getElementById('sm-next-pi').value);
+  const dueDate = document.getElementById('sm-date').value;
+  const autoTasks = document.getElementById('sm-auto-tasks').checked;
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[nextPi];
+
+  ph.dueDate = dueDate;
+  // Set startDate = today (phase is now active)
+  ph.startDate = new Date().toISOString().split('T')[0];
+
+  if (autoTasks) {
+    const dur = PHASE_DURATIONS[ph.name] || 30;
+    ph.tasks.forEach((t,ti) => {
+      if (!t.done) t.dueDate = addDays(ph.startDate, Math.round(dur * (ti+1) / ph.tasks.length));
+    });
+  }
+
+  closeScheduleModal();
+  renderAll();
+  if (drilldownProjectId) renderDrilldown();
+}
+
+// ─── GANTT ───────────────────────────────────────────────────────────────────
+function renderGantt(pId) {
+  const p = projects.find(x=>x.id===pId);
+  if (!p) return '';
+
+  const today = '2026-04-10';
+
+  // Build gantt rows from phases and tracks
+  const rows = [];
+  p.phases.forEach(ph => {
+    if (ph.id < 5) {
+      rows.push({
+        label: `Ph.${ph.id} ${ph.name}`,
+        start: ph.startDate,
+        end: ph.completedDate || ph.dueDate,
+        due: ph.dueDate,
+        done: ph.done,
+        overdue: ph.overdue && !ph.done,
+        active: !ph.done && p.phases.find(x=>!x.done) === ph,
+        indent: 0,
+      });
+    } else {
+      rows.push({label:'Ph.5 Construction', start:ph.startDate, end:ph.dueDate, due:ph.dueDate, done:ph.done, overdue:false, active:!ph.done, indent:0, isHeader:true});
+      if (ph.parallelTracks) {
+        Object.values(ph.parallelTracks).flat().forEach(tr => {
+          rows.push({
+            label: tr.name,
+            start: tr.startDate,
+            end: tr.completedDate || tr.dueDate,
+            due: tr.dueDate,
+            done: tr.done,
+            overdue: false,
+            active: !tr.done,
+            indent: 1,
+          });
+        });
+      }
+    }
+  });
+
+  // Find date range
+  const allDates = rows.flatMap(r=>[r.start,r.end,r.due]).filter(Boolean);
+  if (!allDates.length) return '<div style="padding:20px;color:var(--text2);font-size:13px">No schedule data yet. Complete phases to build the timeline.</div>';
+
+  const minDate = allDates.reduce((a,b)=>a<b?a:b);
+  const maxDate = allDates.reduce((a,b)=>a>b?a:b);
+  const totalDays = Math.max(daysBetween(minDate, maxDate), 1);
+  const todayPct = Math.max(0, Math.min(100, daysBetween(minDate, today) / totalDays * 100));
+
+  const rowH = 32;
+  const labelW = 180;
+  const chartW = 520;
+  const H = rows.length * rowH + 36;
+
+  const monthLabels = [];
+  let cur = new Date(minDate); cur.setDate(1);
+  while (cur.toISOString().split('T')[0] <= maxDate) {
+    const pct = daysBetween(minDate, cur.toISOString().split('T')[0]) / totalDays * 100;
+    if (pct >= 0 && pct <= 100) {
+      monthLabels.push({label: cur.toLocaleDateString('en-US',{month:'short',year:'2-digit'}), pct});
+    }
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  const barsHTML = rows.map((r,i) => {
+    if (!r.start || !r.end) return '';
+    const x1 = Math.max(0, daysBetween(minDate, r.start) / totalDays * 100);
+    const x2 = Math.min(100, daysBetween(minDate, r.end) / totalDays * 100);
+    const w = Math.max(x2 - x1, 0.5);
+    const y = i * rowH + 24;
+    const color = r.done ? 'var(--green)' : r.overdue ? 'var(--red)' : r.active ? 'var(--accent)' : 'var(--text3)';
+    const opacity = r.isHeader ? '0' : r.indent ? '0.85' : '1';
+    const barH = r.indent ? 10 : 14;
+    const barY = y + (rowH - barH) / 2 - 4;
+    return `<rect x="${labelW + x1/100*chartW}" y="${barY}" width="${w/100*chartW}" height="${barH}" rx="3" fill="${color}" opacity="${opacity}"/>
+      ${r.done && r.completedDate ? `<line x1="${labelW + daysBetween(minDate,r.completedDate)/totalDays*chartW}" y1="${barY}" x2="${labelW + daysBetween(minDate,r.completedDate)/totalDays*chartW}" y2="${barY+barH}" stroke="white" stroke-width="2" opacity="0.7"/>` : ''}`;
+  }).join('');
+
+  const labelsHTML = rows.map((r,i) => {
+    const y = i * rowH + 24 + rowH/2 - 2;
+    const x = r.indent ? 14 : 4;
+    const weight = r.isHeader ? '600' : r.indent ? '400' : '500';
+    const fsize = r.indent ? '10' : '11';
+    const color = r.done ? 'var(--green-text)' : r.overdue ? 'var(--red-text)' : 'var(--text)';
+    return `<text x="${x}" y="${y}" font-size="${fsize}" font-weight="${weight}" fill="${color}" dominant-baseline="middle">${r.label.length > 20 ? r.label.slice(0,19)+'…' : r.label}</text>`;
+  }).join('');
+
+  const gridHTML = monthLabels.map(m =>
+    `<line x1="${labelW + m.pct/100*chartW}" y1="18" x2="${labelW + m.pct/100*chartW}" y2="${H}" stroke="var(--border)" stroke-width="0.5"/>
+     <text x="${labelW + m.pct/100*chartW + 3}" y="13" font-size="9" fill="var(--text3)">${m.label}</text>`
+  ).join('');
+
+  return `<div style="overflow-x:auto">
+    <svg width="${labelW+chartW+10}" height="${H}" style="font-family:inherit;display:block">
+      ${gridHTML}
+      <line x1="${labelW + todayPct/100*chartW}" y1="18" x2="${labelW + todayPct/100*chartW}" y2="${H}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="${labelW + todayPct/100*chartW + 3}" y="13" font-size="9" fill="var(--red-text)">Today</text>
+      ${barsHTML}
+      ${labelsHTML}
+    </svg>
+  </div>
+  <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:8px;background:var(--green);border-radius:2px"></div><span style="font-size:11px;color:var(--text2)">Complete</span></div>
+    <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:8px;background:var(--accent);border-radius:2px"></div><span style="font-size:11px;color:var(--text2)">Active</span></div>
+    <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:8px;background:var(--red);border-radius:2px"></div><span style="font-size:11px;color:var(--text2)">Overdue</span></div>
+    <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:8px;background:var(--text3);border-radius:2px"></div><span style="font-size:11px;color:var(--text2)">Upcoming</span></div>
+    <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:2px;background:var(--red)"></div><span style="font-size:11px;color:var(--text2)">Today</span></div>
+  </div>`;
+}
+function selectProject(id) { selectedId=id; renderProjectList(); renderDetail(); }
+
+function togglePhase(pId, pi) {
+  const p = projects.find(x=>x.id===pId);
+  p.phases[pi].open = !p.phases[pi].open;
+  if (drilldownProjectId === pId) renderDrilldown();
+  else renderDetail();
+}
+
+// toggleTask kept for track tasks (parallel tracks still use numeric index directly)
+function toggleTask(pId, pi, ti) {
+  toggleTaskByRef(pId, pi, String(ti));
+}
+
+function saveProjectNotes(pId, val) {
+  const p = projects.find(x=>x.id===pId);
+  if (p) p.notes = val;
+}
+
+function setProjectPhoto(pId, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const p = projects.find(x=>x.id===pId);
+    if (p) { p.photo = e.target.result; renderProjectList(); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function togglePhaseAllTasks(pId, pi) {
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[pi];
+  const today = new Date().toISOString().split('T')[0];
+  if (ph.parallelTracks) {
+    const allDone = Object.values(ph.parallelTracks).flat().every(tr=>tr.tasks.every(t=>t.done));
+    Object.values(ph.parallelTracks).flat().forEach(tr=>{
+      tr.tasks.forEach(t=>{t.done=!allDone; t.completedDate=!allDone?today:null;});
+      tr.done=!allDone;
+    });
+    ph.done=!allDone;
+    ph.completedDate=!allDone?today:null;
+  } else {
+    const tasks = allPhaseTasks(ph);
+    const allDone = tasks.every(t=>t.done);
+    // Toggle all tasks including those in groups
+    ph.tasks.forEach(t => {
+      if (t.isGroup) t.tasks.forEach(gt=>{gt.done=!allDone; gt.completedDate=!allDone?today:null;});
+      else { t.done=!allDone; t.completedDate=!allDone?today:null; }
+    });
+    ph.done=!allDone;
+    ph.completedDate=!allDone?today:null;
+  }
+  renderAll();
+  if (ph.done) {
+    const nextPh = p.phases[pi+1];
+    if (nextPh && !nextPh.done) openScheduleModal(pId, pi, ph.completedDate);
+  }
+}
+
+function toggleGate(pId, pi, gi) {
+  const p = projects.find(x=>x.id===pId);
+  const g = p.phases[pi].gateChecklist[gi];
+  g.done = !g.done;
+  g.completedDate = g.done ? new Date().toISOString().split('T')[0] : null;
+  renderAll();
+}
+
+function toggleTrack(pId, trackKey, trIdx) {
+  const p = projects.find(x=>x.id===pId);
+  p.phases[4].parallelTracks[trackKey][trIdx].open = !p.phases[4].parallelTracks[trackKey][trIdx].open;
+  if (drilldownProjectId === pId) renderDrilldown();
+  else renderDetail();
+}
+
+function toggleTrackTask(pId, trackKey, trIdx, ti) {
+  const p = projects.find(x=>x.id===pId);
+  const tr = p.phases[4].parallelTracks[trackKey][trIdx];
+  const t = tr.tasks[ti];
+  t.done = !t.done;
+  t.completedDate = t.done ? new Date().toISOString().split('T')[0] : null;
+  if (tr.tasks.every(t=>t.done)) { tr.done=true; tr.completedDate=new Date().toISOString().split('T')[0]; }
+  renderAll();
+}
+
+function toggleTrackAll(pId, trackKey, trIdx) {
+  const p = projects.find(x=>x.id===pId);
+  const tr = p.phases[4].parallelTracks[trackKey][trIdx];
+  const allDone = tr.tasks.every(t=>t.done);
+  const today = new Date().toISOString().split('T')[0];
+  tr.tasks.forEach(t=>{t.done=!allDone; t.completedDate=!allDone?today:null;});
+  tr.done=!allDone;
+  if (!allDone) tr.completedDate=today;
+  renderAll();
+}
+
+function markPhaseDone(pId, pi) {
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[pi];
+  const today = new Date().toISOString().split('T')[0];
+  ph.done=true; ph.overdue=false;
+  if (!ph.completedDate) ph.completedDate=today;
+  if (ph.parallelTracks) Object.values(ph.parallelTracks).flat().forEach(tr=>{
+    tr.done=true; if(!tr.completedDate) tr.completedDate=today;
+    tr.tasks.forEach(t=>{t.done=true; if(!t.completedDate) t.completedDate=today;});
+  });
+  else ph.tasks.forEach(t=>{t.done=true; if(!t.completedDate) t.completedDate=today;});
+  ph.gateChecklist.forEach(g=>{g.done=true; if(!g.completedDate) g.completedDate=today;});
+  renderAll();
+  // Suggest schedule for next phase
+  const nextPh = p.phases[pi+1];
+  if (nextPh && !nextPh.done) openScheduleModal(pId, pi, ph.completedDate);
+}
+
+// Due date setters — uses browser prompt for simplicity in standalone version
+// ─── FILE ATTACHMENTS ────────────────────────────────────────────────────────
+// ─── FILE SYSTEM ─────────────────────────────────────────────────────────────
+const FILE_ICONS = {
+  pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊',
+  png:'🖼', jpg:'🖼', jpeg:'🖼', dwg:'📐', ifc:'🏗', zip:'📦', default:'📎'
+};
+function fileIcon(n){const e=(n.split('.').pop()||'').toLowerCase();return FILE_ICONS[e]||FILE_ICONS.default;}
+function fmtBytes(b){if(b<1024)return b+'B';if(b<1048576)return Math.round(b/1024)+'KB';return(b/1048576).toFixed(1)+'MB';}
+
+// Named document slots per phase
+const PHASE_DOC_SLOTS = {
+  'Project Kick Off': [
+    {id:'spacial-contract',  label:'Spacial contract',          required:true},
+    {id:'ace-contract',      label:'ACE contract',              required:true},
+    {id:'greenberg-contract',label:'Greenberg contract',        required:true},
+    {id:'project-brief',     label:'Project brief',             required:false},
+  ],
+  'Schematic Design': [
+    {id:'ifc-model',         label:'IFC model',                 required:true},
+    {id:'site-survey',       label:'Site survey',               required:true},
+    {id:'geotech-report',    label:'Geotech report',            required:true},
+    {id:'civil-schematic',   label:'Civil schematic',           required:true},
+    {id:'cabinetry-layout',  label:'Cabinetry layout',          required:false},
+  ],
+  'Design Development': [
+    {id:'state-set',         label:'State set (ICC/NTA stamped)',required:true},
+    {id:'structural-package',label:'Structural package — ACE',  required:true},
+    {id:'mep-plans',         label:'MEP plans',                 required:true},
+    {id:'title-24',          label:'Title 24 / energy compliance',required:true},
+    {id:'site-logistics',    label:'Site logistics plan',       required:true},
+  ],
+  'Municipal Permitting': [
+    {id:'municipal-set',     label:'Municipal permit package',  required:true},
+    {id:'plan-check-comments',label:'Plan check comments',      required:false},
+    {id:'plan-check-response',label:'Plan check response',      required:false},
+    {id:'building-permit',   label:'Building permit — issued',  required:true},
+    {id:'grading-permit',    label:'Grading permit — issued',   required:true},
+    {id:'utility-permits',   label:'Utility permits — issued',  required:false},
+    {id:'encroachment-permit',label:'Encroachment permit',      required:false},
+  ],
+  'Construction': [
+    {id:'factory-qc',        label:'Factory QC photos',         required:false},
+    {id:'insp-helical',      label:'Inspection — helical piles',required:true},
+    {id:'insp-foundation',   label:'Inspection — foundation',   required:true},
+    {id:'insp-framing',      label:'Inspection — framing',      required:true},
+    {id:'insp-roughin',      label:'Inspection — rough-in',     required:true},
+    {id:'insp-final',        label:'Inspection — final',        required:true},
+    {id:'punch-list',        label:'Punch list',                required:false},
+    {id:'co',                label:'Certificate of Occupancy',  required:true},
+    {id:'site-photos',       label:'Site photos',               required:false},
+  ],
+};
+
+// Project-level document buckets (shown in drill-down header)
+const PROJECT_DOC_BUCKETS = [
+  {id:'contracts',      label:'Contracts',      icon:'📋'},
+  {id:'correspondence', label:'Correspondence', icon:'✉️'},
+  {id:'photos',         label:'Photos',         icon:'📷'},
+  {id:'extras',         label:'Extra files',    icon:'📎'},
+];
+
+function makeFileObj(file) {
+  return {
+    name: file.name, size: file.size,
+    uploadedAt: new Date().toISOString().split('T')[0],
+    driveUrl: 'https://drive.google.com/file/d/demo-'+Date.now()+'/view',
+    localUrl: URL.createObjectURL(file),
+  };
+}
+
+// ── Phase-level named slots ───────────────────────────────────────────────────
+function renderFileAttachments(pId, pi, files) {
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[pi];
+  const slots = PHASE_DOC_SLOTS[ph.name] || [];
+  const namedFiles = ph.namedFiles || {};   // {slotId: fileObj}
+  const extraFiles = ph.extraFiles || [];   // [{fileObj}]
+
+  const requiredMissing = slots.filter(s=>s.required && !namedFiles[s.id]).length;
+
+  const slotsHTML = slots.length ? `
+    <div style="margin-bottom:8px">
+      ${slots.map(s => {
+        const f = namedFiles[s.id];
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)">
+          <span style="font-size:13px;flex-shrink:0">${f ? fileIcon(f.name) : (s.required ? '🔴' : '⚪')}</span>
+          <span style="flex:1;font-size:12px;font-weight:${f?'500':'400'};color:${f?'var(--text)':'var(--text3)'}">${s.label}${s.required&&!f?' *':''}</span>
+          ${f ? `
+            <span style="font-size:10px;color:var(--text3)">${fmtBytes(f.size||0)} · ${fmtDate(f.uploadedAt)}</span>
+            <button class="file-btn" onclick="openNamedFile(${pId},${pi},'${s.id}')">Open ↗</button>
+            <button class="file-btn del" onclick="deleteNamedFile(${pId},${pi},'${s.id}')">✕</button>
+          ` : `
+            <label style="cursor:pointer">
+              <span class="file-btn" style="pointer-events:none">+ Upload</span>
+              <input type="file" style="display:none" onchange="attachNamedFile(event,${pId},${pi},'${s.id}')">
+            </label>
+          `}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const extrasHTML = `
+    <div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);margin-bottom:5px">Extra files ${extraFiles.length?'('+extraFiles.length+')':''}</div>
+      ${extraFiles.map((f,fi)=>`
+        <div class="file-row">
+          <span class="file-icon">${fileIcon(f.name)}</span>
+          <span class="file-name" title="${f.name}">${f.name}</span>
+          <span class="file-meta">${fmtBytes(f.size||0)} · ${fmtDate(f.uploadedAt)}</span>
+          <div class="file-actions">
+            <button class="file-btn" onclick="openExtraFile(${pId},${pi},${fi})">Open ↗</button>
+            <button class="file-btn del" onclick="deleteExtraFile(${pId},${pi},${fi})">✕</button>
+          </div>
+        </div>`).join('')}
+      <div class="drop-zone" onclick="document.getElementById('fu-extra-${pId}-${pi}').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="event.preventDefault();this.classList.remove('drag-over');handleExtraFileDrop(event,${pId},${pi})">
+        <input type="file" id="fu-extra-${pId}-${pi}" multiple onchange="handleExtraFileSelect(event,${pId},${pi})">
+        <div style="font-size:11px;color:var(--text2)">Drop extra files or <span style="color:var(--accent-dark);text-decoration:underline">browse</span></div>
+      </div>
+    </div>`;
+
+  return `<div style="margin-top:8px;border-top:0.5px solid var(--border);padding-top:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2)">Documents</div>
+      ${requiredMissing?`<span style="font-size:10px;color:var(--amber-text);background:var(--amber-bg);padding:1px 7px;border-radius:10px">${requiredMissing} required missing</span>`:'<span style="font-size:10px;color:var(--green-text)">✓ All required docs uploaded</span>'}
+    </div>
+    ${slotsHTML}
+    ${extrasHTML}
+  </div>`;
+}
+
+function attachNamedFile(event, pId, pi, slotId) {
+  const file = event.target.files[0]; if (!file) return;
+  const p = projects.find(x=>x.id===pId);
+  if (!p.phases[pi].namedFiles) p.phases[pi].namedFiles = {};
+  p.phases[pi].namedFiles[slotId] = makeFileObj(file);
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+function openNamedFile(pId, pi, slotId) {
+  const p = projects.find(x=>x.id===pId);
+  const f = p.phases[pi].namedFiles?.[slotId]; if (!f) return;
+  window.open(f.localUrl||f.driveUrl,'_blank');
+}
+function deleteNamedFile(pId, pi, slotId) {
+  const p = projects.find(x=>x.id===pId);
+  if (p.phases[pi].namedFiles) delete p.phases[pi].namedFiles[slotId];
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+function handleExtraFileSelect(event, pId, pi) {
+  Array.from(event.target.files).forEach(f => attachExtraFile(pId, pi, f));
+  event.target.value = '';
+}
+function handleExtraFileDrop(event, pId, pi) {
+  Array.from(event.dataTransfer.files).forEach(f => attachExtraFile(pId, pi, f));
+}
+function attachExtraFile(pId, pi, file) {
+  const p = projects.find(x=>x.id===pId);
+  if (!p.phases[pi].extraFiles) p.phases[pi].extraFiles = [];
+  p.phases[pi].extraFiles.push(makeFileObj(file));
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+function openExtraFile(pId, pi, fi) {
+  const p = projects.find(x=>x.id===pId);
+  const f = p.phases[pi].extraFiles?.[fi]; if (!f) return;
+  window.open(f.localUrl||f.driveUrl,'_blank');
+}
+function deleteExtraFile(pId, pi, fi) {
+  const p = projects.find(x=>x.id===pId);
+  if (p.phases[pi].extraFiles) p.phases[pi].extraFiles.splice(fi,1);
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+
+// ── Project-level file buckets (drill-down) ───────────────────────────────────
+function renderProjectFiles(pId) {
+  const p = projects.find(x=>x.id===pId);
+  if (!p.projectFiles) p.projectFiles = {};
+
+  return PROJECT_DOC_BUCKETS.map(bucket => {
+    const files = p.projectFiles[bucket.id] || [];
+    return `<div style="background:var(--bg2);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">${bucket.icon}</span>
+          <span style="font-size:12px;font-weight:500">${bucket.label}</span>
+          ${files.length?`<span style="font-size:10px;color:var(--text3)">(${files.length})</span>`:''}
+        </div>
+        <label style="cursor:pointer">
+          <span class="file-btn" style="pointer-events:none;font-size:11px">+ Add</span>
+          <input type="file" style="display:none" multiple onchange="attachProjectFile(event,${pId},'${bucket.id}')">
+        </label>
+      </div>
+      ${files.map((f,fi)=>`
+        <div class="file-row" style="background:var(--bg)">
+          <span class="file-icon" style="font-size:12px">${fileIcon(f.name)}</span>
+          <span class="file-name" style="font-size:11px" title="${f.name}">${f.name}</span>
+          <span class="file-meta" style="font-size:10px">${fmtDate(f.uploadedAt)}</span>
+          <div class="file-actions">
+            <button class="file-btn" style="font-size:10px" onclick="openProjectFile(${pId},'${bucket.id}',${fi})">Open ↗</button>
+            <button class="file-btn del" style="font-size:10px" onclick="deleteProjectFile(${pId},'${bucket.id}',${fi})">✕</button>
+          </div>
+        </div>`).join('')}
+      ${!files.length?`<div style="font-size:11px;color:var(--text3);padding:4px 0">No files yet · Saves to Google Drive automatically</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function attachProjectFile(event, pId, bucketId) {
+  const p = projects.find(x=>x.id===pId);
+  if (!p.projectFiles) p.projectFiles = {};
+  if (!p.projectFiles[bucketId]) p.projectFiles[bucketId] = [];
+  Array.from(event.target.files).forEach(f => p.projectFiles[bucketId].push(makeFileObj(f)));
+  event.target.value = '';
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+function openProjectFile(pId, bucketId, fi) {
+  const p = projects.find(x=>x.id===pId);
+  const f = p.projectFiles?.[bucketId]?.[fi]; if (!f) return;
+  window.open(f.localUrl||f.driveUrl,'_blank');
+}
+function deleteProjectFile(pId, bucketId, fi) {
+  const p = projects.find(x=>x.id===pId);
+  if (p.projectFiles?.[bucketId]) p.projectFiles[bucketId].splice(fi,1);
+  renderAll(); if (drilldownProjectId) renderDrilldown();
+}
+
+// Seed demo files
+function seedDemoFiles() {
+  function f(name, size, date){return{name,size,uploadedAt:date,driveUrl:'https://drive.google.com'};}
+  if (projects[0]) {
+    // Santa Rita — Phase 1 contracts
+    projects[0].phases[0].namedFiles = {
+      'spacial-contract': f('Spacial Design Contract.pdf',520000,'2025-11-02'),
+      'greenberg-contract': f('Greenberg Contract — Executed.pdf',480000,'2025-11-02'),
+      'ace-contract': f('ACE Structural Contract.pdf',310000,'2025-11-03'),
+    };
+    // Phase 2 schematic
+    projects[0].phases[1].namedFiles = {
+      'ifc-model': f('IFC Model v3 — Spacial.ifc',8500000,'2025-12-10'),
+      'site-survey': f('Site Survey — Santa Rita.pdf',2200000,'2025-11-19'),
+      'geotech-report': f('Geotech Report — Santa Rita.pdf',1800000,'2025-11-19'),
+      'civil-schematic': f('Civil Schematic.pdf',940000,'2025-12-01'),
+    };
+    // Phase 3 design dev
+    projects[0].phases[2].namedFiles = {
+      'state-set': f('ICC-NTA Stamped Drawings v2.pdf',4200000,'2025-12-08'),
+      'structural-package': f('ACE Structural Package.pdf',3100000,'2025-12-08'),
+      'mep-plans': f('MEP Plans — Coordinated.pdf',2800000,'2025-12-05'),
+    };
+    // Phase 4 permitting
+    projects[0].phases[3].namedFiles = {
+      'municipal-set': f('Permit Package — Full Set.pdf',12000000,'2026-01-13'),
+      'plan-check-comments': f('Plan Check Comments Round 1.pdf',420000,'2026-01-28'),
+      'plan-check-response': f('Plan Check Response Round 1.pdf',680000,'2026-02-05'),
+    };
+    // Project-level files
+    projects[0].projectFiles = {
+      contracts: [f('Owner-Contractor Agreement.pdf',890000,'2025-11-01')],
+      photos: [f('Site Photos — Pre-demo.jpg',4500000,'2025-11-15'),f('Foundation Progress.jpg',3200000,'2026-03-20')],
+    };
+  }
+  if (projects[2]) {
+    projects[2].phases[0].namedFiles = {
+      'spacial-contract': f('Spacial Contract — Franklin.pdf',520000,'2025-09-05'),
+      'greenberg-contract': f('Greenberg Contract — Franklin.pdf',480000,'2025-09-05'),
+      'ace-contract': f('ACE Contract — Franklin.pdf',310000,'2025-09-06'),
+    };
+    projects[2].phases[2].namedFiles = {
+      'state-set': f('ICC-NTA Stamped Set — Franklin.pdf',5800000,'2025-11-28'),
+      'structural-package': f('ACE Structural — Franklin.pdf',4100000,'2025-11-28'),
+    };
+  }
+}
+
+let dpCallback = null;
+
+function openDP(label, currentVal, callback, event) {
+  dpCallback = callback;
+  document.getElementById('dp-label').textContent = label;
+  document.getElementById('dp-input').value = currentVal || '';
+  const popup = document.getElementById('dp-popup');
+  popup.classList.add('open');
+  // Position near click
+  const x = Math.min(event.clientX, window.innerWidth - 240);
+  const y = Math.min(event.clientY + 10, window.innerHeight - 160);
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+  setTimeout(() => document.getElementById('dp-input').focus(), 50);
+}
+
+function confirmDP() {
+  const val = document.getElementById('dp-input').value;
+  if (dpCallback) dpCallback(val || null);
+  closeDP();
+}
+
+function clearDP() {
+  if (dpCallback) dpCallback(null);
+  closeDP();
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  const overlay = document.getElementById('notif-overlay');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    renderNotifications();
+    // Move rendered HTML to panel body
+    const body = document.getElementById('notif-panel-body');
+    const src = document.getElementById('notif-view');
+    body.innerHTML = src.innerHTML;
+  }
+}
+
+function closeDP() {
+  document.getElementById('dp-popup').classList.remove('open');
+  dpCallback = null;
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDP(); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('dp-popup').classList.contains('open')) confirmDP(); });
+
+function setTaskDuePrompt(pId, pi, ref, event) {
+  const p = projects.find(x=>x.id===pId);
+  const t = resolveTask(p, pi, ref);
+  if (!t) return;
+  openDP(`Due date — "${t.name.slice(0,35)}"`, t.dueDate, val => {
+    t.dueDate = val; renderAll(); if (drilldownProjectId) renderDrilldown();
+  }, event);
+}
+
+function editTaskCompletedPrompt(pId, pi, ref, event) {
+  const p = projects.find(x=>x.id===pId);
+  const t = resolveTask(p, pi, ref);
+  if (!t) return;
+  openDP(`Completion date — "${t.name.slice(0,35)}"`, t.completedDate, val => {
+    t.completedDate = val; renderAll(); if (drilldownProjectId) renderDrilldown();
+  }, event);
+}
+
+function editPhaseCompletedPrompt(pId, pi, event) {
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases[pi];
+  openDP(`Completion date — ${ph.name}`, ph.completedDate, val => {
+    ph.completedDate = val; renderAll(); if (drilldownProjectId) renderDrilldown();
+  }, event);
+}
+
+function setTrackTaskDuePrompt(pId, trackKey, trIdx, ti, event) {
+  const p = projects.find(x=>x.id===pId);
+  const t = p.phases[4].parallelTracks[trackKey][trIdx].tasks[ti];
+  openDP(`Due date — "${t.name.slice(0,35)}"`, t.dueDate, val => {
+    t.dueDate = val; renderAll(); if (drilldownProjectId) renderDrilldown();
+  }, event);
+}
+
+function editTrackTaskCompletedPrompt(pId, trackKey, trIdx, ti, event) {
+  const p = projects.find(x=>x.id===pId);
+  const t = p.phases[4].parallelTracks[trackKey][trIdx].tasks[ti];
+  openDP(`Completion date — "${t.name.slice(0,35)}"`, t.completedDate, val => {
+    t.completedDate = val; renderAll(); if (drilldownProjectId) renderDrilldown();
+  }, event);
+}
+
+// Notes
+function startNote(pId,pi){editingNote[`${pId}_${pi}`]=true;renderDetail();setTimeout(()=>{const el=document.getElementById(`ni-${pId}_${pi}`);if(el)el.focus();},50);}
+function saveNote(pId,pi){const p=projects.find(x=>x.id===pId);p.phases[pi].note=document.getElementById(`ni-${pId}_${pi}`)?.value?.trim()||'';delete editingNote[`${pId}_${pi}`];renderAll();}
+function cancelNote(pId,pi){delete editingNote[`${pId}_${pi}`];renderDetail();}
+function deleteNote(pId,pi){const p=projects.find(x=>x.id===pId);p.phases[pi].note='';delete editingNote[`${pId}_${pi}`];renderAll();}
+
+// Reminders
+function draftAndLog(pId, phaseName) {
+  const p = projects.find(x=>x.id===pId);
+  const ph = p.phases.find(x=>x.name===phaseName);
+  if (!ph) return;
+  const owner = ph.owner;
+  const r = PARTNERS[owner]||{};
+  const late = ph.overdue&&!ph.done;
+  const blocked = ph.gateChecklist.filter(g=>!g.done).map(g=>`  · ${g.item}`).join('\n');
+  const subj = late ? `Action needed: ${phaseName} overdue — ${p.name}` : `Reminder: ${phaseName} — ${p.name}`;
+  const body = `Hi ${owner.split(' ')[0]},\n\n${late
+    ? `The ${phaseName} phase on ${p.name} (${p.address}) is past its due date.`
+    : `This is a reminder regarding the ${phaseName} phase on ${p.name} (${p.address}).`}\n\nOutstanding gate checklist items:\n${blocked||'  · All gate items complete'}\n${ph.drawAmount?`\nDraw amount: ${fmt(ph.drawAmount)}${ph.drawPaid?' (paid)':' (pending)'}`:''}${ph.note?`\nNote: ${ph.note}`:''}\n\nPlease reply with a status update.\n\nThanks,\nNeovi Project Operations`;
+  document.getElementById('e-to').value=r.email||'';
+  document.getElementById('e-subj').value=subj;
+  document.getElementById('e-body').value=body;
+  document.getElementById('email-modal').classList.add('open');
+  const key=`${pId}_${phaseName}`;
+  if(!reminderLog[key])reminderLog[key]=[];
+  reminderLog[key].push(Date.now());
+  renderOverdue(); renderNotifications();
+}
+
+function closeEmail(){document.getElementById('email-modal').classList.remove('open');}
+function copyEmail(){
+  const subj=document.getElementById('e-subj').value;
+  const body=document.getElementById('e-body').value;
+  const to=document.getElementById('e-to').value;
+  navigator.clipboard.writeText(`To: ${to}\nSubject: ${subj}\n\n${body}`).then(()=>{
+    const btn=event.target;btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent='Copy to clipboard',2000);
+  });
+}
+
+// Draw modal
+
+// Add project
+function toggleAddForm(){document.getElementById('add-form').classList.toggle('open');}
+function addProject(){
+  const name=document.getElementById('n-name').value.trim();
+  if(!name){alert('Project name required');return;}
+  const id=projects.length+1;
+  const addr=document.getElementById('n-addr').value||'Address TBD';
+  const type=document.getElementById('n-type').value;
+  const val=parseInt(document.getElementById('n-val').value)||0;
+  const tier=document.getElementById('n-tier').value;
+  const ir=document.getElementById('n-ir').value;
+  projects.push(makeProject(id,name,addr,type,tier,val,0,ir,null));
+  selectedId=id;
+  document.getElementById('add-form').classList.remove('open');
+  ['n-name','n-addr','n-val'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+}
+
+// Tab switching
+let _rafPending = false;
+function renderAll(){
+  if (_rafPending) return;
+  _rafPending = true;
+  requestAnimationFrame(() => {
+    _rafPending = false;
+    renderRoleBanner();
+    renderMetrics();
+    renderTabVisibility();
+    renderProjectList();
+    if (drilldownProjectId) renderDrilldown();
+    else renderDetail();
+  });
+}
+
+function renderRoleBanner() {
+  const el = document.getElementById('role-banner');
+  if (!el) return;
+  if (currentRole === 'pm') { el.style.display='none'; return; }
+  const r = ROLES[currentRole];
+  el.style.display = 'flex';
+  el.innerHTML = `<span style="font-size:13px">👤</span>
+    <span style="font-size:12px;font-weight:500;color:${r.color}">${r.label} view</span>
+    <span style="font-size:11px;color:var(--text2)"> — ${r.desc}</span>
+    <div style="flex:1"></div>
+    <button onclick="switchTab('settings',document.querySelector('[data-tab=settings]'))" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent-dark);font-family:inherit;text-decoration:underline">Switch role</button>`;
+}
+
+function renderTabVisibility() {}
+
+// ─── SETTINGS PAGE ───────────────────────────────────────────────────────────
+function renderSettings() {
+  const phaseDurs = Object.entries(PHASE_DURATIONS).map(([name,days])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)">
+      <span style="flex:1;font-size:13px">${name}</span>
+      <input type="number" value="${days}" min="1" max="365"
+        onchange="PHASE_DURATIONS['${name}']=parseInt(this.value)||${days}"
+        style="width:60px;font-size:12px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;text-align:center">
+      <span style="font-size:11px;color:var(--text3);width:24px">days</span>
+    </div>`).join('');
+
+  const trackDurs = Object.entries(TRACK_DURATIONS).map(([id,days])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)">
+      <span style="flex:1;font-size:13px">${id.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span>
+      <input type="number" value="${days}" min="1" max="365"
+        onchange="TRACK_DURATIONS['${id}']=parseInt(this.value)||${days}"
+        style="width:60px;font-size:12px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:inherit;text-align:center">
+      <span style="font-size:11px;color:var(--text3);width:24px">days</span>
+    </div>`).join('');
+
+  document.getElementById('settings-view').innerHTML = `
+    <div style="max-width:600px">
+
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px">
+        <div class="settings-section-lbl">Appearance</div>
+        <div class="toggle-row">
+          <div>
+            <div style="font-size:13px;font-weight:500">Dark mode</div>
+            <div style="font-size:11px;color:var(--text2)">Switch to dark theme</div>
+          </div>
+          <div class="toggle-track ${darkMode?'on':''}" onclick="setDarkMode(!darkMode);renderSettings()">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px">
+        <div class="settings-section-lbl">View as role</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Switch roles to preview what different users see. Use this during demos.</div>
+        ${Object.entries(ROLES).map(([id,r])=>`
+          <div class="role-pill ${currentRole===id?'active':''}" onclick="setRole('${id}');renderSettings()">
+            <div style="width:8px;height:8px;border-radius:50%;background:${r.color};flex-shrink:0"></div>
+            <div style="flex:1">
+              <div class="role-name">${r.label}</div>
+              <div class="role-desc">${r.desc}</div>
+            </div>
+            ${currentRole===id?'<span style="font-size:12px;color:var(--accent-dark)">✓ Active</span>':''}
+          </div>`).join('')}
+      </div>
+
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px">
+        <div class="settings-section-lbl">Default phase durations</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Used when scheduling next phase after completion. Adjust to match your real averages.</div>
+        ${phaseDurs}
+      </div>
+
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px">
+        <div class="settings-section-lbl">Default construction track durations</div>
+        ${trackDurs}
+      </div>
+
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:20px">
+        <div class="settings-section-lbl">Notification schedule</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Configure when automated reminders fire.</div>
+        ${notifSchedule.map(rule => {
+          const isEditing = editingNotifId === rule.id;
+          return `<div class="nrow" style="${!rule.enabled?'opacity:.45':''}">
+            <div class="ndot" style="background:${rule.color}"></div>
+            ${isEditing ? `
+              <div style="flex:1;display:flex;flex-direction:column;gap:7px;padding:4px 0">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <label style="font-size:11px;color:var(--text2)">${rule.isRepeat?'Repeat every':'Days before due:'}</label>
+                  <input type="number" id="ne-days-${rule.id}" value="${rule.days}" min="0" max="90" style="width:60px;font-size:12px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);font-family:inherit;background:var(--bg);color:var(--text)">
+                  <span style="font-size:11px;color:var(--text2)">days</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <label style="font-size:11px;color:var(--text2)">Label:</label>
+                  <input type="text" id="ne-lbl-${rule.id}" value="${rule.label}" style="flex:1;font-size:12px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:var(--r);font-family:inherit;background:var(--bg);color:var(--text)">
+                </div>
+                <div style="display:flex;gap:6px;margin-top:2px">
+                  <button class="btn btn-primary" style="font-size:11px;padding:3px 10px" onclick="saveNotifRule('${rule.id}');renderSettings()">Save</button>
+                  <button class="btn" style="font-size:11px;padding:3px 10px" onclick="cancelNotifEdit();renderSettings()">Cancel</button>
+                </div>
+              </div>` : `
+              <div style="flex:1">
+                <div style="font-size:12px;font-weight:500">${rule.isRepeat?'Every '+rule.days+' days while overdue':rule.days===0?'Day becomes overdue':rule.days+'d before due'}</div>
+                <div style="font-size:11px;color:var(--text2)">${rule.desc}</div>
+              </div>`}
+            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+              ${!isEditing?`
+                <button class="btn" style="font-size:10px;padding:2px 7px" onclick="startNotifEdit('${rule.id}');renderSettings()">Edit</button>
+                <button class="btn" style="font-size:10px;padding:2px 7px;color:${rule.enabled?'var(--red-text)':'var(--green-text)'}" onclick="toggleNotifRule('${rule.id}');renderSettings()">${rule.enabled?'Off':'On'}</button>
+              `:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function switchTab(tab,btn){
+  ['projects','overdue','team','schedule','factory','notifications','settings'].forEach(t=>{
+    const el = document.getElementById('tab-'+t);
+    if (el) el.style.display = t===tab?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(tab==='overdue')renderOverdue();
+  if(tab==='team')renderTeam();
+  if(tab==='schedule')renderSchedule();
+  if(tab==='factory')renderFactory();
+  if(tab==='notifications')renderNotifications();
+  if(tab==='settings')renderSettings();
+}
+
+// ─── DRILL-DOWN ──────────────────────────────────────────────────────────────
+function openDrilldown(pId) {
+  // Make sure we're on the projects tab first
+  switchTab('projects', document.querySelector('[data-tab=projects]'));
+  drilldownProjectId = pId;
+  selectedId = pId;
+  document.getElementById('projects-list-view').style.display = 'none';
+  document.getElementById('project-drilldown').style.display = 'block';
+  renderDrilldown();
+  renderMetrics();
+}
+
+function closeDrilldown() {
+  drilldownProjectId = null;
+  document.getElementById('project-drilldown').style.display = 'none';
+  document.getElementById('projects-list-view').style.display = 'block';
+  renderAll();
+}
+
+function renderDrilldown() {
+  const p = projects.find(x=>x.id===drilldownProjectId);
+  if (!p) return;
+  const ap = activePhase(p);
+  const overdueItems = p.phases.filter(ph=>ph.overdue&&!ph.done);
+
+  const phasesHTML = p.phases.map((ph,pi) => renderPhaseBlock(p,ph,pi)).join('');
+
+
+
+  document.getElementById('project-drilldown').innerHTML = `
+    <div class="drilldown-header">
+      <button class="back-btn" onclick="closeDrilldown()">← All projects</button>
+      <div style="font-size:18px;font-weight:600">${p.name}</div>
+      ${statusBadge(p)}
+      <span class="badge ${p.type==='client'?'b-accent':'b-gray'}">${p.type==='client'?'Client Build':'Spec Build'}</span>
+      ${p.tier?`<span class="badge b-gray">${p.tier}</span>`:''}
+      <div style="flex:1"></div>
+      <div style="font-size:12px;color:var(--text2)">${p.address}</div>
+      <button class="btn" style="font-size:11px" onclick="openClientView(${p.id})">Client view →</button>
+    </div>
+
+    ${overdueItems.length?`<div style="background:var(--red-bg);border:0.5px solid var(--red-border);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:13px;color:var(--red-text);font-weight:500">${overdueItems.length} overdue phase${overdueItems.length>1?'s':''}</span>
+      <span style="font-size:12px;color:var(--red-text);">${overdueItems.map(ph=>`Ph.${ph.id}: ${ph.name}`).join(' · ')}</span>
+      <div style="flex:1"></div>
+      <button class="btn" style="font-size:11px;color:var(--red-text);border-color:var(--red-border)" onclick="switchTab('overdue',document.querySelector('[data-tab=overdue]'))">View overdue →</button>
+    </div>`:''}
+
+    <div style="margin-bottom:16px">
+      <div class="drilldown-section">
+        <div class="sec-lbl" style="margin-bottom:10px">Phase progress</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          ${p.phases.map(ph => {
+            const pct = Math.round(allPhaseTasks(ph).filter(t=>t.done).length / Math.max(allPhaseTasks(ph).length,1) * 100);
+            const isActive = !ph.done && ap===ph;
+            return `<div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+                <div style="display:flex;align-items:center;gap:5px">
+                  <span style="font-size:10px;color:var(--text3)">Ph.${ph.id}</span>
+                  <span style="font-size:12px;font-weight:${isActive?'500':'400'}">${ph.name}</span>
+                  ${ph.done?'<span class="badge b-success" style="font-size:9px">Done</span>':''}
+                  ${ph.overdue&&!ph.done?'<span class="badge b-danger" style="font-size:9px">Overdue</span>':''}
+                  ${isActive&&!ph.overdue?'<span class="badge b-accent" style="font-size:9px">Active</span>':''}
+                </div>
+                <span style="font-size:11px;color:var(--text2)">${pct}%</span>
+              </div>
+              <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${ph.done?'var(--green)':ph.overdue?'var(--red)':'var(--accent)'};border-radius:2px;transition:width .3s"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="drilldown-section" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="sec-lbl" style="margin-bottom:0">All phases & tasks</div>
+        <button class="btn" style="font-size:11px" onclick="expandAllPhases(${p.id})">Expand all</button>
+      </div>
+      ${phasesHTML}
+    </div>
+
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-top:16px">
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="sec-lbl" style="margin-bottom:0">Project notes</div>
+        </div>
+        <textarea class="proj-notes" placeholder="Add project notes, context, anything relevant…" onchange="saveProjectNotes(${p.id},this.value)">${p.notes||''}</textarea>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="sec-lbl" style="margin-bottom:0">Project files</div>
+        <div style="font-size:11px;color:var(--text3)">Syncs to Google Drive · Neovi Projects / ${p.name}</div>
+      </div>
+      ${renderProjectFiles(p.id)}
+    </div>
+
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="sec-lbl" style="margin-bottom:0">Project schedule — Gantt</div>
+        <div style="font-size:11px;color:var(--text3)">Durations based on defaults · Complete phases to refine</div>
+      </div>
+      ${renderGantt(p.id)}
+    </div>`;
+}
+
+function expandAllPhases(pId) {
+  const p = projects.find(x=>x.id===pId);
+  const allOpen = p.phases.every(ph=>ph.open);
+  p.phases.forEach(ph=>ph.open=!allOpen);
+  renderDrilldown();
+}
+
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+projects.forEach(p => {
+  p.phases.forEach(ph => { if (ph.overdue && !ph.done) ph.open = true; });
+});
+
+const firstOverdue = projects.find(p => p.phases.some(ph => ph.overdue && !ph.done));
+if (firstOverdue) selectedId = firstOverdue.id;
+
+reminderLog['1_Municipal Permitting'] = [Date.now()-3*86400000, Date.now()-86400000];
+reminderLog['3_Municipal Permitting'] = [Date.now()-5*86400000];
+reminderLog['4_Project Kick Off']     = [Date.now()-2*86400000];
+
+seedDemoFiles();
+
+// ── MEADOW: Seed Phase 5 Construction with real schedule ─────────────────────
+(function seedSantaRitaConstruction() {
+  const meadow = projects.find(p => p.name === 'Santa Rita');
+  if (!meadow) return;
+  const ph5 = meadow.phases[4]; // Phase 5 = Construction
+
+  function t(name, start, end, opts) {
+    return {
+      id: `m_${name.replace(/\s/g,'_').slice(0,12)}_${Math.random().toString(36).slice(2,6)}`,
+      name, done: false, critical: opts?.critical||false, note: opts?.note||'',
+      dueDate: `2026-${end.replace('/','-')}`, startDate: `2026-${start.replace('/','-')}`,
+      dependsOn: null
+    };
+  }
+
+  ph5.tasks = [
+    // ── DIDIER CREW ──────────────────────────────────────────────────────────
+    {
+      isGroup: true, id: 'grp_didier', name: 'Didier crew', open: true,
+      tasks: [
+        // Panel Assembly sub-group flattened
+        t('Vertical Walls',       '04/01','04/11', {critical:true}),
+        t('Roof Trusses',         '04/13','04/15'),
+        t('Roof Panels',          '04/16','04/18'),
+        t('Glass Doors',          '04/20','04/21'),
+        t('Rough-in: Living/Dining/Den', '04/22','04/23'),
+        t('Rough-in: Kitchen/Pantry',    '04/24','04/24'),
+        t('Rough-in: Suite 3/Hallway',   '04/25','04/25'),
+        t('Rough-in: Suite 2',           '04/27','04/27'),
+        t('Rough-in: Suite 1',           '04/28','04/28'),
+        t('Rough-in: Laundry/Garage/Mech','04/29','04/29'),
+        t('Rough-in: Foyer/Powder/Office','04/30','04/30'),
+        t('Rough-in: JADU',              '05/01','05/01'),
+        t('Exterior Cladding: Foundation Skirt','05/02','05/05'),
+        t('Exterior Cladding: Shera Cladding',  '05/06','05/08'),
+        t('Interior Finishes: Living/Dining',   '05/12','05/12'),
+        t('Interior Finishes: Den',             '05/13','05/14'),
+        t('Interior Finishes: Kitchen/Pantry',  '05/15','05/15'),
+        t('Interior Finishes: Suite 3/Hallway', '05/16','05/16'),
+        t('Interior Finishes: Suite 2+1',       '05/18','05/18'),
+        t('Interior Finishes: Laundry/Garage',  '05/19','05/19'),
+        t('Interior Finishes: Foyer/Powder/Office','05/20','05/20'),
+        t('Interior Finishes: JADU',            '05/21','05/21'),
+        t('Exterior Doors',                     '05/22','05/23'),
+        t('Solar',                              '05/25','05/27'),
+      ]
+    },
+    // ── NEOVI SUPPORT CREW ───────────────────────────────────────────────────
+    {
+      isGroup: true, id: 'grp_support', name: 'Neovi support crew', open: true,
+      tasks: [
+        t('Mini-split HVAC',              '04/22','05/01'),
+        t('Solid Surface',                '04/23','05/08'),
+        t('Stretch Ceiling Profile',      '04/27','05/26', {note:'Longest single task — 26 days'}),
+        t('Sound Proofing: Den',          '05/02','05/02'),
+        t('Sound Proofing: Suite 3+2',    '05/04','05/04'),
+        t('Sound Proofing: Suite 1/Laundry','05/05','05/05'),
+        t('Sound Proofing: Foyer/Powder', '05/06','05/06'),
+        t('Sound Proofing: JADU',         '05/07','05/07'),
+        t('Exterior Finishes: Hose Bibs', '05/08','05/08'),
+        t('Exterior Finishes: Lighting',  '05/09','05/09'),
+        t('Exterior Finishes: House Numbers','05/11','05/11'),
+        t('Exterior Finishes: Window Trim','05/12','05/13'),
+      ]
+    },
+    // ── GREENBERG ────────────────────────────────────────────────────────────
+    {
+      isGroup: true, id: 'grp_greenberg', name: 'Greenberg', open: true,
+      tasks: [
+        t('Rough Plumbing: Bathroom 2',   '04/10','04/10', {critical:true}),
+        t('Rough Plumbing: Bathroom 1',   '04/11','04/11', {critical:true}),
+        t('Rough Plumbing: JADU Bathroom','04/11','04/11', {critical:true}),
+        t('Frieze Board',                 '04/17','04/20'),
+        t('Tile: Bathroom 3',             '04/18','04/21'),
+        t('Tile: JADU Bathroom',          '04/18','04/23'),
+        t('Tile: Bathroom 1',             '04/22','04/27'),
+        t('Tile: Bathroom 2',             '04/24','04/29'),
+        t('Deck: Secure Joists',          '04/23','04/23'),
+        t('Deck: Trex Boards',            '04/24','04/25'),
+        t('Deck: Outdoor Kitchen',        '04/27','04/29'),
+        t('Paint',                        '05/09','05/11'),
+        t('Flooring: Living/Dining/Kitchen/Den','05/09','05/11'),
+        t('Flooring: Hallway/Bedrooms',   '05/12','05/13'),
+        t('Flooring: Foyer/Office/JADU',  '05/14','05/14'),
+        t('Cabinetry: Kitchen/Pantry',    '05/12','05/14'),
+        t('Cabinetry: Suites',            '05/15','05/15'),
+        t('Cabinetry: Laundry/Garage',    '05/16','05/19'),
+        t('Cabinetry: Foyer/Powder/Office','05/20','05/21'),
+        t('Cabinetry: JADU',              '05/22','05/25'),
+        t('Cabinetry: Living/Dining/Den', '05/26','05/28'),
+        t('Interior Finishes: Living/Dining','05/12','05/13'),
+        t('Interior Finishes: Den',       '05/14','05/14'),
+        t('Interior Finishes: Kitchen/Pantry','05/15','05/16'),
+        t('Interior Finishes: Suites',    '05/18','05/18'),
+        t('Interior Finishes: Laundry/Garage','05/19','05/19'),
+        t('Interior Finishes: JADU/Powder','05/20','05/20'),
+      ]
+    },
+    // ── CONTRACTORS ──────────────────────────────────────────────────────────
+    {
+      isGroup: true, id: 'grp_contractors', name: 'Contractors', open: false,
+      tasks: [
+        t('Utilities: Stub Outs',         '04/13','04/16', {critical:true}),
+        t('Utilities: Trenching',         '04/20','04/21'),
+        t('Utilities: Water Supply',      '04/22','04/22'),
+        t('Utilities: Electrical (PG&E)', '04/20','04/22'),
+        t('Skylights',                    '04/20','04/22'),
+        t('Landscaping: Soil Delivery',   '04/20','04/20'),
+        t('Stucco',                       '05/06','05/09'),
+        t('Shower Glass: Measurements',   '04/30','04/30'),
+        t('Shower Glass: Fabrication',    '05/01','05/18', {note:'15-day lead time — order early'}),
+        t('Shower Glass: Installation',   '05/19','05/19'),
+        t('Gutters/Fascia/Downspouts',    '05/11','05/12'),
+      ]
+    },
+  ];
+
+  // Mark plumbing as done (it started Apr 10, before today Apr 14)
+  const greenbergGroup = ph5.tasks.find(t=>t.id==='grp_greenberg');
+  if (greenbergGroup) {
+    ['Rough Plumbing: Bathroom 2','Rough Plumbing: Bathroom 1','Rough Plumbing: JADU Bathroom'].forEach(name => {
+      const task = greenbergGroup.tasks.find(t=>t.name===name);
+      if (task) { task.done=true; task.completedDate='2026-04-11'; }
+    });
+  }
+
+  // Mark vertical walls as in-progress (started Apr 1)
+  const didierGroup = ph5.tasks.find(t=>t.id==='grp_didier');
+  if (didierGroup) {
+    const vw = didierGroup.tasks.find(t=>t.name==='Vertical Walls');
+    if (vw) vw.note = 'In progress — on track';
+  }
+
+  ph5.startDate = '2026-04-01';
+  ph5.dueDate   = '2026-05-28';
+  ph5.note = 'Real schedule loaded from Didier/Neovi/Greenberg/Contractors crews.';
+})();
+
+// Note: starts on All Projects tab so cards are visible by default
+renderAll();
+</script>
+</body>
+</html>
