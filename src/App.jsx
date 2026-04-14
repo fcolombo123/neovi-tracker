@@ -16,6 +16,10 @@ import NotificationsView from './components/NotificationsView'
 import SettingsView from './components/SettingsView'
 import './App.css'
 
+const supabaseConfigured =
+  !!import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co'
+
 function AppContent() {
   const { user, loading: authLoading, signOut } = useAuth()
   const { useSeedMode } = useData()
@@ -31,9 +35,18 @@ function AppContent() {
     document.documentElement.setAttribute('data-theme', on ? 'dark' : '')
   }
 
-  // Show login page if Supabase is configured and user is not authenticated
-  if (!useSeedMode && !authLoading && !user) {
+  // When Supabase is configured, require login
+  if (supabaseConfigured && !authLoading && !user) {
     return <LoginPage />
+  }
+
+  // Show loading while auth is resolving
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg3)' }}>
+        <div style={{ color: 'var(--text2)', fontSize: '14px' }}>Loading...</div>
+      </div>
+    )
   }
 
   const canEdit = currentRole === 'pm'
@@ -102,12 +115,19 @@ function AppContent() {
   )
 }
 
+function AppShell() {
+  const { user } = useAuth()
+  return (
+    <DataProvider user={user}>
+      <AppContent />
+    </DataProvider>
+  )
+}
+
 function App() {
   return (
     <AuthProvider>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
+      <AppShell />
     </AuthProvider>
   )
 }

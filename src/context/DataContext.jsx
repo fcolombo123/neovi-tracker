@@ -138,7 +138,7 @@ function shapeProjects(projects, phases, tasks, taskGroups, gateItems) {
 
 // ─── PROVIDER ──────────────────────────────────────────────────────────────
 
-export function DataProvider({ children }) {
+export function DataProvider({ children, user }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -150,10 +150,17 @@ export function DataProvider({ children }) {
 
   // ── Fetch all project data from Supabase ───────────────────────────────
   const fetchProjects = useCallback(async () => {
+    // No Supabase → always seed mode
     if (!supabaseConfigured) {
       console.info('Supabase not configured — using seed data');
       setProjects(JSON.parse(JSON.stringify(seedProjects)));
       setUseSeedMode(true);
+      setLoading(false);
+      return;
+    }
+
+    // Supabase configured but no user yet → wait for auth
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -163,7 +170,7 @@ export function DataProvider({ children }) {
 
     try {
       const [projRes, phaseRes, taskRes, groupRes, gateRes] = await Promise.all([
-        supabase.from('projects').select('*').order('id'),
+        supabase.from('projects').select('*').order('created_at'),
         supabase.from('phases').select('*').order('phase_number'),
         supabase.from('tasks').select('*').order('sort_order'),
         supabase.from('task_groups').select('*').order('sort_order'),
@@ -183,27 +190,16 @@ export function DataProvider({ children }) {
         (gateRes.data || []).map(toCamelObj),
       );
 
-      // Fallback to seed data if DB is empty
-      if (shaped.length === 0) {
-        console.info('No projects in database — using seed data');
-        setProjects(JSON.parse(JSON.stringify(seedProjects)));
-        setUseSeedMode(true);
-      } else {
-        setProjects(shaped);
-      }
+      setProjects(shaped);
+      setUseSeedMode(false);
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       setError(err.message || String(err));
-      // Fallback to seed data on error
-      if (projects.length === 0) {
-        console.info('Fetch failed — falling back to seed data');
-        setProjects(JSON.parse(JSON.stringify(seedProjects)));
-        setUseSeedMode(true);
-      }
+      setProjects([]);
     } finally {
       setLoading(false);
     }
-  }, [supabaseConfigured]);
+  }, [supabaseConfigured, user]);
 
   useEffect(() => {
     fetchProjects();
