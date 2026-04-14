@@ -169,6 +169,13 @@ export function DataProvider({ children, user }) {
     setError(null);
 
     try {
+      // Ensure the Supabase client has the current session before querying
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.info('No active session — waiting for auth');
+        setLoading(false);
+        return;
+      }
       const [projRes, phaseRes, taskRes, groupRes, gateRes] = await Promise.all([
         supabase.from('projects').select('*').order('created_at'),
         supabase.from('phases').select('*').order('phase_number'),
