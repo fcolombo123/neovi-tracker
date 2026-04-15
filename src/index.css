@@ -61,7 +61,7 @@ h1{font-size:22px;font-weight:600}
 .tab.active{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
 
 /* Two col */
-.two-col{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.two-col{display:grid;grid-template-columns:320px 1fr;gap:16px}
 
 /* Project cards */
 .pcard{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
