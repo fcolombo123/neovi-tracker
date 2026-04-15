@@ -36,7 +36,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
       {/* Photo area */}
       <div
         style={{
-          position: 'relative', height: '90px', background: 'var(--bg3)',
+          position: 'relative', aspectRatio: '4/3', background: 'var(--bg3)',
           overflow: 'hidden', cursor: 'pointer'
         }}
         onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
