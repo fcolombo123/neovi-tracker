@@ -31,46 +31,11 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
     <div
       className={`pcard${selected ? ' sel' : ''}`}
       onClick={onClick}
-      style={{ padding: 0, overflow: 'hidden' }}
+      style={{ padding: 0, overflow: 'hidden', display: 'flex' }}
     >
-      {/* Photo area */}
-      <div
-        style={{
-          position: 'relative', aspectRatio: '4/3', background: 'var(--bg3)',
-          overflow: 'hidden', cursor: 'pointer'
-        }}
-        onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
-      >
-        {p.photoUrl ? (
-          <img src={p.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
-        ) : (
-          <div style={{
-            width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', flexDirection: 'column', gap: '4px'
-          }}>
-            <div style={{ fontSize: '22px', opacity: 0.25 }}>&#127959;</div>
-          </div>
-        )}
-        <label
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute', bottom: '6px', right: '6px',
-            background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: '10px',
-            padding: '2px 8px', borderRadius: '10px', cursor: 'pointer',
-            backdropFilter: 'blur(2px)'
-          }}
-        >
-          {p.photoUrl ? '&#10227; Change' : '+ Photo'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-        </label>
-        <div style={{ position: 'absolute', top: '6px', right: '6px' }}>
-          {statusBadge(p)}
-        </div>
-      </div>
-
-      {/* Card body */}
-      <div style={{ padding: '10px 12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3px' }}>
+      {/* Info — left side */}
+      <div style={{ flex: 1, padding: '10px 12px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
           <div
             className="pname"
             onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
@@ -79,6 +44,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
           >
             {p.name}
           </div>
+          {statusBadge(p)}
         </div>
         <div className="psub">{p.address}</div>
         <div style={{ display: 'flex', gap: '5px', marginBottom: '6px' }}>
@@ -86,10 +52,10 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
             {p.type === 'client' ? 'Client Build' : 'Spec Build'}
           </span>
           {p.tier && <span className="badge b-gray">{p.tier}</span>}
-          {p.planningIR === 'yes' && <span className="badge b-info">Planning IR</span>}
+          {(p.planningIr === 'yes' || p.planningIR === 'yes') && <span className="badge b-info">Planning IR</span>}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text2)' }}>Phase {ap.id}: {ap.name}</div>
+        <div style={{ fontSize: '11px', color: 'var(--text2)', marginBottom: '3px' }}>
+          Phase {ap?.phaseNumber || '?'}: {ap?.name || 'Unknown'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
           <div style={{ fontSize: '10px', color: 'var(--text3)', width: '44px', flexShrink: 0 }}>Work</div>
@@ -117,6 +83,38 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
         >
           Open full project view &#8594;
         </button>
+      </div>
+
+      {/* Photo — right side */}
+      <div
+        style={{
+          position: 'relative', width: '120px', flexShrink: 0, background: 'var(--bg3)',
+          overflow: 'hidden', cursor: 'pointer'
+        }}
+        onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
+      >
+        {p.photoUrl ? (
+          <img src={p.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
+        ) : (
+          <div style={{
+            width: '100%', height: '100%', display: 'flex', alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ fontSize: '22px', opacity: 0.25 }}>&#127959;</div>
+          </div>
+        )}
+        <label
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute', bottom: '6px', right: '6px',
+            background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: '9px',
+            padding: '2px 6px', borderRadius: '10px', cursor: 'pointer',
+            backdropFilter: 'blur(2px)'
+          }}
+        >
+          {p.photoUrl ? '\u21BB' : '+'}
+          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+        </label>
       </div>
     </div>
   );
