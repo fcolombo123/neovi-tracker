@@ -72,6 +72,11 @@ export default function StuckBanner({ onSelectProject }) {
                     <div style={{ fontSize: '10px', color: 'var(--text2)', marginTop: '1px' }}>
                       {item.phase.name}
                     </div>
+                    {item.task.note && (
+                      <div style={{ fontSize: '11px', color: 'var(--text2)', fontStyle: 'italic', marginTop: '3px' }}>
+                        {item.task.note}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
