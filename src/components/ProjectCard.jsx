@@ -88,7 +88,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
       {/* Photo — right side */}
       <div
         style={{
-          position: 'relative', width: '120px', flexShrink: 0, background: 'var(--bg3)',
+          position: 'relative', width: '80px', flexShrink: 0, background: 'var(--bg3)',
           overflow: 'hidden', cursor: 'pointer'
         }}
         onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
