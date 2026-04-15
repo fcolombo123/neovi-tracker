@@ -24,7 +24,7 @@ function AppContent() {
   const { user, loading: authLoading, signOut } = useAuth()
   const { useSeedMode } = useData()
   const [activeTab, setActiveTab] = useState('projects')
-  const [selectedId, setSelectedId] = useState(1)
+  const [selectedId, setSelectedId] = useState(null)
   const [drilldownId, setDrilldownId] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
