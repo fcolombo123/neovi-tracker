@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import seedProjects from '../seedData';
+import { getPhase1, getPhase2, getPhase3, getPhase4, getPhase5Groups, getPhase5Gates } from '../playbook';
 
 const DataContext = createContext(null);
 
@@ -272,7 +273,10 @@ export function DataProvider({ children, user }) {
       .single();
     if (err) throw err;
 
-    // Create default phases for the new project
+    const projectType = data.type || newProj.type || 'client';
+    const ir = data.planningIr || data.planning_ir || 'unknown';
+
+    // Create phases
     const defaultPhases = [
       { phase_number: 1, name: 'Project Kick Off', owner: 'Neovi PM' },
       { phase_number: 2, name: 'Schematic Design', owner: 'Spacial' },
@@ -281,16 +285,74 @@ export function DataProvider({ children, user }) {
       { phase_number: 5, name: 'Construction', owner: 'Greenberg+Neovi' },
     ];
 
-    const phasesToInsert = defaultPhases.map((ph) => ({
-      ...ph,
-      project_id: newProj.id,
-      done: false,
-    }));
-
-    const { error: phaseErr } = await supabase
+    const { data: phases, error: phaseErr } = await supabase
       .from('phases')
-      .insert(phasesToInsert);
+      .insert(defaultPhases.map(ph => ({ ...ph, project_id: newProj.id, done: false })))
+      .select();
     if (phaseErr) throw phaseErr;
+
+    const phaseMap = {};
+    for (const ph of phases) phaseMap[ph.phase_number] = ph.id;
+
+    // Get playbook templates
+    const ph1 = getPhase1(projectType, ir);
+    const ph2 = getPhase2(projectType, ir);
+    const ph3 = getPhase3();
+    const ph4 = getPhase4();
+    const ph5Groups = getPhase5Groups();
+    const ph5Gates = getPhase5Gates();
+
+    // Insert tasks for phases 1-4
+    const flatTasks = [];
+    const templates = [
+      { phaseNum: 1, data: ph1 },
+      { phaseNum: 2, data: ph2 },
+      { phaseNum: 3, data: ph3 },
+      { phaseNum: 4, data: ph4 },
+    ];
+    for (const { phaseNum, data: tmpl } of templates) {
+      for (let i = 0; i < tmpl.tasks.length; i++) {
+        flatTasks.push({ phase_id: phaseMap[phaseNum], name: tmpl.tasks[i], done: false, sort_order: i + 1 });
+      }
+    }
+    if (flatTasks.length > 0) {
+      const { error: tErr } = await supabase.from('tasks').insert(flatTasks);
+      if (tErr) console.error('Task insert error:', tErr.message);
+    }
+
+    // Insert gate items for phases 1-4
+    const gateItems = [];
+    for (const { phaseNum, data: tmpl } of templates) {
+      for (let i = 0; i < tmpl.gates.length; i++) {
+        gateItems.push({ phase_id: phaseMap[phaseNum], item: tmpl.gates[i], done: false, sort_order: i + 1 });
+      }
+    }
+
+    // Phase 5 gates
+    for (let i = 0; i < ph5Gates.length; i++) {
+      gateItems.push({ phase_id: phaseMap[5], item: ph5Gates[i], done: false, sort_order: i + 1 });
+    }
+
+    if (gateItems.length > 0) {
+      const { error: gErr } = await supabase.from('gate_items').insert(gateItems);
+      if (gErr) console.error('Gate insert error:', gErr.message);
+    }
+
+    // Insert Phase 5 task groups and their tasks
+    for (const grp of ph5Groups) {
+      const { data: newGroup, error: gErr } = await supabase
+        .from('task_groups')
+        .insert({ phase_id: phaseMap[5], name: grp.name, sort_order: grp.sort, open: true })
+        .select()
+        .single();
+      if (gErr) { console.error('Group insert error:', gErr.message); continue; }
+
+      const groupTasks = grp.tasks.map((name, i) => ({
+        group_id: newGroup.id, name, done: false, sort_order: i + 1,
+      }));
+      const { error: gtErr } = await supabase.from('tasks').insert(groupTasks);
+      if (gtErr) console.error('Group task insert error:', gtErr.message);
+    }
 
     await fetchProjects();
     return toCamelObj(newProj);
