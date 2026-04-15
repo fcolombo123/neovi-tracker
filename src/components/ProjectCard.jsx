@@ -10,7 +10,7 @@ function statusBadge(p) {
   return <span className="badge b-info">In progress</span>;
 }
 
-export default function ProjectCard({ project, selected, onClick, onDrilldown, onPhotoChange }) {
+export default function ProjectCard({ project, selected, onClick, onDrilldown, onPhotoChange, compact }) {
   const p = project;
   const ap = activePhase(p);
   const waitingOn = getWaitingOn(p);
@@ -66,36 +66,38 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
         </div>
 
         {/* Photo thumbnail */}
-        <div
-          style={{
-            position: 'relative', width: '100px', flexShrink: 0, background: 'var(--bg3)',
-            overflow: 'hidden', cursor: 'pointer'
-          }}
-          onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
-        >
-          {p.photoUrl ? (
-            <img src={p.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
-          ) : (
-            <div style={{
-              width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <div style={{ fontSize: '20px', opacity: 0.25 }}>&#127959;</div>
-            </div>
-          )}
-          <label
-            onClick={(e) => e.stopPropagation()}
+        {!compact && (
+          <div
             style={{
-              position: 'absolute', bottom: '4px', right: '4px',
-              background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: '9px',
-              padding: '2px 6px', borderRadius: '10px', cursor: 'pointer',
-              backdropFilter: 'blur(2px)'
+              position: 'relative', width: '100px', flexShrink: 0, background: 'var(--bg3)',
+              overflow: 'hidden', cursor: 'pointer'
             }}
+            onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
           >
-            {p.photoUrl ? '\u21BB' : '+'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-          </label>
-        </div>
+            {p.photoUrl ? (
+              <img src={p.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%', display: 'flex', alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{ fontSize: '20px', opacity: 0.25 }}>&#127959;</div>
+              </div>
+            )}
+            <label
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute', bottom: '4px', right: '4px',
+                background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: '9px',
+                padding: '2px 6px', borderRadius: '10px', cursor: 'pointer',
+                backdropFilter: 'blur(2px)'
+              }}
+            >
+              {p.photoUrl ? '\u21BB' : '+'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Bottom: progress + button */}
@@ -107,7 +109,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
           </div>
           <div className="prog-lbl">{work}%</div>
         </div>
-        <button
+        {!compact && <button
           onClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
           style={{
             width: '100%', background: 'var(--accent-bg)',
@@ -120,7 +122,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
           onMouseOut={(e) => { e.target.style.background = 'var(--accent-bg)'; e.target.style.color = 'var(--accent-dark)'; }}
         >
           Open full project view &#8594;
-        </button>
+        </button>}
       </div>
     </div>
   );

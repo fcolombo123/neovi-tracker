@@ -80,13 +80,15 @@ function AppContent() {
               onBack={() => setDrilldownId(null)}
               isDrilldown={true}
             />
-          ) : (
+          ) : selectedId ? (
             <div className="two-col">
               <ProjectList
                 selectedId={selectedId}
                 onSelect={setSelectedId}
+                onDeselect={() => setSelectedId(null)}
                 onDrilldown={setDrilldownId}
                 currentRole={currentRole}
+                layout="list"
               />
               <DetailPanel
                 projectId={selectedId}
@@ -94,6 +96,14 @@ function AppContent() {
                 isDrilldown={false}
               />
             </div>
+          ) : (
+            <ProjectList
+              selectedId={null}
+              onSelect={setSelectedId}
+              onDrilldown={setDrilldownId}
+              currentRole={currentRole}
+              layout="grid"
+            />
           )}
         </div>
       )}
