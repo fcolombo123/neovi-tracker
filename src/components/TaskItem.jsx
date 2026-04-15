@@ -3,35 +3,33 @@ import { useData } from '../context/DataContext.jsx';
 import { fmtDate } from '../utils.js';
 
 export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIndex, canEdit }) {
-  const { setProjects, useSeedMode } = useData();
+  const { setProjects, useSeedMode, updateTask } = useData();
   const t = task;
   const [editingNote, setEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(t.note || '');
 
-  const toggleDone = () => {
+  const toggleDone = async () => {
     if (!canEdit) return;
+    const newDone = !t.done;
     if (useSeedMode) {
       setProjects(prev => {
         const next = JSON.parse(JSON.stringify(prev));
         const p = next.find(x => x.id === project.id);
         if (!p) return prev;
         const ph = p.phases[phaseIndex];
-        let target;
-        if (groupIndex !== undefined) {
-          target = ph.tasks[groupIndex]?.tasks?.[taskIndex];
-        } else {
-          target = ph.tasks[taskIndex];
-        }
+        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
         if (target) {
-          target.done = !target.done;
-          target.completedDate = target.done ? new Date().toISOString().split('T')[0] : null;
+          target.done = newDone;
+          target.completedDate = newDone ? new Date().toISOString().split('T')[0] : null;
         }
         return next;
       });
+    } else {
+      await updateTask(t.id, { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null });
     }
   };
 
-  const toggleCritical = () => {
+  const toggleCritical = async () => {
     if (!canEdit) return;
     if (useSeedMode) {
       setProjects(prev => {
@@ -39,34 +37,28 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
         const p = next.find(x => x.id === project.id);
         if (!p) return prev;
         const ph = p.phases[phaseIndex];
-        let target;
-        if (groupIndex !== undefined) {
-          target = ph.tasks[groupIndex]?.tasks?.[taskIndex];
-        } else {
-          target = ph.tasks[taskIndex];
-        }
+        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
         if (target) target.critical = !target.critical;
         return next;
       });
+    } else {
+      await updateTask(t.id, { critical: !t.critical });
     }
   };
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (useSeedMode) {
       setProjects(prev => {
         const next = JSON.parse(JSON.stringify(prev));
         const p = next.find(x => x.id === project.id);
         if (!p) return prev;
         const ph = p.phases[phaseIndex];
-        let target;
-        if (groupIndex !== undefined) {
-          target = ph.tasks[groupIndex]?.tasks?.[taskIndex];
-        } else {
-          target = ph.tasks[taskIndex];
-        }
+        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
         if (target) target.note = noteText;
         return next;
       });
+    } else {
+      await updateTask(t.id, { note: noteText });
     }
     setEditingNote(false);
   };

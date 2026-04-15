@@ -3,24 +3,29 @@ import { useData } from '../context/DataContext.jsx';
 import { fmtDate } from '../utils.js';
 
 export default function GateChecklist({ project, phase, phaseIndex, canEdit }) {
-  const { setProjects, useSeedMode } = useData();
+  const { setProjects, useSeedMode, updateGateItem } = useData();
   const gates = phase.gateChecklist || [];
   const done = gates.filter(g => g.done).length;
 
-  const toggleGate = (gi) => {
+  const toggleGate = async (gi) => {
     if (!canEdit) return;
+    const gate = gates[gi];
+    if (!gate) return;
+    const newDone = !gate.done;
     if (useSeedMode) {
       setProjects(prev => {
         const next = JSON.parse(JSON.stringify(prev));
         const p = next.find(x => x.id === project.id);
         if (!p) return prev;
-        const gate = p.phases[phaseIndex].gateChecklist[gi];
-        if (gate) {
-          gate.done = !gate.done;
-          gate.completedDate = gate.done ? new Date().toISOString().split('T')[0] : null;
+        const g = p.phases[phaseIndex].gateChecklist[gi];
+        if (g) {
+          g.done = newDone;
+          g.completedDate = newDone ? new Date().toISOString().split('T')[0] : null;
         }
         return next;
       });
+    } else {
+      await updateGateItem(gate.id, { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null });
     }
   };
 

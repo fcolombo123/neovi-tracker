@@ -6,7 +6,7 @@ import { allPhaseTasks } from '../queries.js';
 import { fmtDate } from '../utils.js';
 
 export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceOpen }) {
-  const { setProjects, useSeedMode } = useData();
+  const { setProjects, useSeedMode, updatePhase } = useData();
   const ph = phase;
   const [isOpen, setIsOpen] = useState(ph.open || false);
   const [editingNote, setEditingNote] = useState(false);
@@ -32,16 +32,16 @@ export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceO
 
   const toggleOpen = () => setIsOpen(!isOpen);
 
-  const togglePhaseDone = (e) => {
+  const togglePhaseDone = async (e) => {
     e.stopPropagation();
     if (!canEdit) return;
+    const newDone = !ph.done;
     if (useSeedMode) {
       setProjects(prev => {
         const next = JSON.parse(JSON.stringify(prev));
         const p = next.find(x => x.id === project.id);
         if (!p) return prev;
         const curPh = p.phases[phaseIndex];
-        const newDone = !curPh.done;
         curPh.done = newDone;
         if (newDone) {
           curPh.completedDate = new Date().toISOString().split('T')[0];
@@ -58,10 +58,12 @@ export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceO
         }
         return next;
       });
+    } else {
+      await updatePhase(ph.id, { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null });
     }
   };
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (useSeedMode) {
       setProjects(prev => {
         const next = JSON.parse(JSON.stringify(prev));
@@ -69,6 +71,8 @@ export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceO
         if (p) p.phases[phaseIndex].note = noteText;
         return next;
       });
+    } else {
+      await updatePhase(ph.id, { note: noteText });
     }
     setEditingNote(false);
   };
