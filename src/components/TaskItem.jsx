@@ -21,11 +21,32 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
         if (target) {
           target.done = newDone;
           target.completedDate = newDone ? new Date().toISOString().split('T')[0] : null;
+          if (newDone) target.stuck = false;
         }
         return next;
       });
     } else {
-      await updateTask(t.id, { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null });
+      const updates = { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null };
+      if (newDone) updates.stuck = false;
+      await updateTask(t.id, updates);
+    }
+  };
+
+  const toggleStuck = async () => {
+    if (!canEdit) return;
+    const newStuck = !t.stuck;
+    if (useSeedMode) {
+      setProjects(prev => {
+        const next = JSON.parse(JSON.stringify(prev));
+        const p = next.find(x => x.id === project.id);
+        if (!p) return prev;
+        const ph = p.phases[phaseIndex];
+        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
+        if (target) target.stuck = newStuck;
+        return next;
+      });
+    } else {
+      await updateTask(t.id, { stuck: newStuck });
     }
   };
 
@@ -64,9 +85,10 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   };
 
   const isOverdue = t.dueDate && !t.done && new Date(t.dueDate) < new Date();
+  const isStuck = t.stuck && !t.done;
 
   return (
-    <div className={`task-row${t.critical ? ' crit' : ''}`}>
+    <div className={`task-row${t.critical ? ' crit' : ''}`} style={isStuck ? { background: 'var(--red-bg)', borderLeft: '3px solid var(--red)' } : {}}>
       <button
         className={`tcheck${t.done ? ' done' : ''}`}
         onClick={toggleDone}
@@ -76,6 +98,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={`tlbl${t.done ? ' done' : ''}`}>
+          {isStuck && <span style={{ color: 'var(--red-text)', fontWeight: 600, marginRight: '4px' }}>STUCK</span>}
           {t.name}
         </div>
         {t.note && !editingNote && (
@@ -104,6 +127,14 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
       )}
       {canEdit && (
         <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+          <button
+            className="btn"
+            style={{ fontSize: '10px', padding: '1px 4px', color: isStuck ? 'var(--red-text)' : 'var(--text3)', fontWeight: isStuck ? 700 : 400 }}
+            onClick={toggleStuck}
+            title={isStuck ? 'Unstick' : 'Mark as stuck'}
+          >
+            {isStuck ? '\u26A0' : '\u26A0'}
+          </button>
           <button
             className="btn"
             style={{ fontSize: '10px', padding: '1px 4px', color: t.critical ? 'var(--red-text)' : 'var(--text3)' }}

@@ -14,6 +14,7 @@ import ScheduleView from './components/ScheduleView'
 import FactoryView from './components/FactoryView'
 import NotificationsView from './components/NotificationsView'
 import SettingsView from './components/SettingsView'
+import StuckBanner from './components/StuckBanner'
 import './App.css'
 
 const supabaseConfigured =
@@ -66,6 +67,8 @@ function AppContent() {
       {showAddForm && canEdit && (
         <AddProjectForm onClose={() => setShowAddForm(false)} />
       )}
+
+      <StuckBanner onSelectProject={(id) => { setActiveTab('projects'); setSelectedId(id); }} />
 
       <Metrics currentRole={currentRole} />
 
