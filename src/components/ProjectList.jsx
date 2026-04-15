@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useData } from '../context/DataContext.jsx';
 import ProjectCard from './ProjectCard.jsx';
 import { pctWork } from '../queries.js';
 
 export default function ProjectList({ currentRole, selectedId, onSelect, onDeselect, onDrilldown, layout }) {
   const { projects, updateProject } = useData();
-  const [reordering, setReordering] = useState(false);
-  const [sortBy, setSortBy] = useState('custom'); // 'custom' | 'progress-asc' | 'progress-desc'
+  const [sortBy, setSortBy] = useState('custom');
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
 
   const visibleProjects = currentRole === 'client' ? projects.slice(0, 1) : projects;
 
@@ -20,22 +21,38 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDesel
     updateProject(projectId, { photoUrl: dataUrl });
   };
 
-  const moveProject = async (index, direction) => {
-    const swapIndex = index + direction;
-    if (swapIndex < 0 || swapIndex >= sorted.length) return;
-    const a = sorted[index];
-    const b = sorted[swapIndex];
-    const aOrder = a.sortOrder ?? index;
-    const bOrder = b.sortOrder ?? swapIndex;
-    await updateProject(a.id, { sortOrder: bOrder });
-    await updateProject(b.id, { sortOrder: aOrder });
+  const handleDragStart = (index) => {
+    dragItem.current = index;
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    dragOverItem.current = index;
+  };
+
+  const handleDrop = async () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
+
+    const reordered = [...sorted];
+    const [dragged] = reordered.splice(dragItem.current, 1);
+    reordered.splice(dragOverItem.current, 0, dragged);
+
+    // Update sort_order for all affected projects
+    for (let i = 0; i < reordered.length; i++) {
+      if (reordered[i].sortOrder !== i + 1) {
+        await updateProject(reordered[i].id, { sortOrder: i + 1 });
+      }
+    }
+
+    dragItem.current = null;
+    dragOverItem.current = null;
   };
 
   const cycleSortBy = () => {
     if (sortBy === 'custom') setSortBy('progress-asc');
     else if (sortBy === 'progress-asc') setSortBy('progress-desc');
     else setSortBy('custom');
-    setReordering(false);
   };
 
   const sortLabel = sortBy === 'custom' ? 'Custom order'
@@ -49,11 +66,6 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDesel
           <button className="btn" style={{ fontSize: '11px' }} onClick={cycleSortBy}>
             Sort: {sortLabel}
           </button>
-          {sortBy === 'custom' && (
-            <button className="btn" style={{ fontSize: '11px' }} onClick={() => setReordering(!reordering)}>
-              {reordering ? 'Done' : 'Reorder'}
-            </button>
-          )}
         </div>
         <div style={{
           display: 'grid',
@@ -61,30 +73,18 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDesel
           gap: '12px',
         }}>
           {sorted.map((p, i) => (
-            <div key={p.id} style={{ position: 'relative' }}>
-              {reordering && sortBy === 'custom' && (
-                <div style={{
-                  position: 'absolute', top: '6px', left: '6px', zIndex: 10,
-                  display: 'flex', gap: '3px',
-                }}>
-                  <button
-                    className="btn"
-                    style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--bg)', opacity: i === 0 ? 0.3 : 1 }}
-                    onClick={(e) => { e.stopPropagation(); moveProject(i, -1); }}
-                    disabled={i === 0}
-                  >&#8592;</button>
-                  <button
-                    className="btn"
-                    style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--bg)', opacity: i === sorted.length - 1 ? 0.3 : 1 }}
-                    onClick={(e) => { e.stopPropagation(); moveProject(i, 1); }}
-                    disabled={i === sorted.length - 1}
-                  >&#8594;</button>
-                </div>
-              )}
+            <div
+              key={p.id}
+              draggable={sortBy === 'custom'}
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={handleDrop}
+              style={{ cursor: sortBy === 'custom' ? 'grab' : 'default' }}
+            >
               <ProjectCard
                 project={p}
                 selected={false}
-                onClick={() => !reordering && onSelect(p.id)}
+                onClick={() => onSelect(p.id)}
                 onDrilldown={onDrilldown}
                 onPhotoChange={handlePhotoChange}
               />
