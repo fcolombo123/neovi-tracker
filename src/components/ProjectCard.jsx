@@ -41,8 +41,8 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
         }}
         onDoubleClick={(e) => { e.stopPropagation(); onDrilldown(p.id); }}
       >
-        {p.photo ? (
-          <img src={p.photo} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
+        {p.photoUrl ? (
+          <img src={p.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
         ) : (
           <div style={{
             width: '100%', height: '100%', display: 'flex', alignItems: 'center',
@@ -60,7 +60,7 @@ export default function ProjectCard({ project, selected, onClick, onDrilldown, o
             backdropFilter: 'blur(2px)'
           }}
         >
-          {p.photo ? '&#10227; Change' : '+ Photo'}
+          {p.photoUrl ? '&#10227; Change' : '+ Photo'}
           <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
         </label>
         <div style={{ position: 'absolute', top: '6px', right: '6px' }}>

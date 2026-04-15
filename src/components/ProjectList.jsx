@@ -8,7 +8,7 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDrill
   const visibleProjects = currentRole === 'client' ? projects.slice(0, 1) : projects;
 
   const handlePhotoChange = (projectId, dataUrl) => {
-    updateProject(projectId, { photo: dataUrl });
+    updateProject(projectId, { photoUrl: dataUrl });
   };
 
   return (
