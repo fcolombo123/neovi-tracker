@@ -6,7 +6,7 @@ import { allPhaseTasks } from '../queries.js';
 import { fmtDate } from '../utils.js';
 
 export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceOpen }) {
-  const { setProjects, useSeedMode, updatePhase } = useData();
+  const { setProjects, useSeedMode, updatePhase, updateTask, updateGateItem } = useData();
   const ph = phase;
   const [isOpen, setIsOpen] = useState(ph.open || false);
   const [editingNote, setEditingNote] = useState(false);
@@ -59,7 +59,29 @@ export default function PhaseBlock({ project, phase, phaseIndex, canEdit, forceO
         return next;
       });
     } else {
-      await updatePhase(ph.id, { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null });
+      const today = new Date().toISOString().split('T')[0];
+      await updatePhase(ph.id, { done: newDone, completedDate: newDone ? today : null });
+
+      if (newDone) {
+        // Mark all tasks done (standalone + group tasks)
+        const allTasks = [];
+        for (const t of (ph.tasks || [])) {
+          if (t.isGroup) {
+            for (const st of (t.tasks || [])) {
+              if (!st.done) allTasks.push(st.id);
+            }
+          } else {
+            if (!t.done) allTasks.push(t.id);
+          }
+        }
+        for (const taskId of allTasks) {
+          await updateTask(taskId, { done: true, completedDate: today, stuck: false });
+        }
+        // Mark all gates done
+        for (const g of (ph.gateChecklist || [])) {
+          if (!g.done) await updateGateItem(g.id, { done: true, completedDate: today });
+        }
+      }
     }
   };
 
