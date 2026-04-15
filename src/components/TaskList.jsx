@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext.jsx';
 import TaskItem from './TaskItem.jsx';
 
 export default function TaskList({ project, phase, phaseIndex, canEdit }) {
-  const { setProjects, useSeedMode } = useData();
+  const { setProjects, useSeedMode, createTask } = useData();
   const [addingTask, setAddingTask] = useState(null); // null | 'phase' | groupIndex
   const [newTaskName, setNewTaskName] = useState('');
   const [openGroups, setOpenGroups] = useState({});
@@ -12,7 +12,7 @@ export default function TaskList({ project, phase, phaseIndex, canEdit }) {
     setOpenGroups(prev => ({ ...prev, [gi]: !prev[gi] }));
   };
 
-  const commitAddTask = (targetGroupIndex) => {
+  const commitAddTask = async (targetGroupIndex) => {
     if (!newTaskName.trim()) { setAddingTask(null); return; }
     if (useSeedMode) {
       setProjects(prev => {
@@ -23,11 +23,8 @@ export default function TaskList({ project, phase, phaseIndex, canEdit }) {
         const newTask = {
           id: 't_' + Date.now(),
           name: newTaskName.trim(),
-          done: false,
-          critical: false,
-          note: '',
-          dueDate: null,
-          completedDate: null,
+          done: false, critical: false, note: '',
+          dueDate: null, completedDate: null,
         };
         if (targetGroupIndex !== undefined && targetGroupIndex !== null && ph.tasks[targetGroupIndex]?.isGroup) {
           ph.tasks[targetGroupIndex].tasks.push(newTask);
@@ -35,6 +32,22 @@ export default function TaskList({ project, phase, phaseIndex, canEdit }) {
           ph.tasks.push(newTask);
         }
         return next;
+      });
+    } else {
+      // Supabase mode: insert into tasks table
+      const isGroup = targetGroupIndex !== undefined && targetGroupIndex !== null && phase.tasks[targetGroupIndex]?.isGroup;
+      const group = isGroup ? phase.tasks[targetGroupIndex] : null;
+      const maxSort = isGroup
+        ? Math.max(0, ...(group.tasks || []).map(t => t.sortOrder || 0))
+        : Math.max(0, ...(phase.tasks || []).filter(t => !t.isGroup).map(t => t.sortOrder || 0));
+
+      await createTask({
+        phaseId: isGroup ? null : phase.id,
+        groupId: isGroup ? group.id : null,
+        name: newTaskName.trim(),
+        done: false,
+        critical: false,
+        sortOrder: maxSort + 1,
       });
     }
     setNewTaskName('');

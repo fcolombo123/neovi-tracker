@@ -214,6 +214,15 @@ export function DataProvider({ children, user }) {
 
   // ── Mutation helpers ───────────────────────────────────────────────────
 
+  async function createTask(data) {
+    const snakeData = toSnakeObj(data);
+    const { error: err } = await supabase
+      .from('tasks')
+      .insert(snakeData);
+    if (err) throw err;
+    await fetchProjects();
+  }
+
   async function updateTask(taskId, updates) {
     const snakeUpdates = toSnakeObj(updates);
     const { error: err } = await supabase
@@ -294,6 +303,7 @@ export function DataProvider({ children, user }) {
     error,
     useSeedMode,
     fetchProjects,
+    createTask,
     updateTask,
     updatePhase,
     updateProject,
