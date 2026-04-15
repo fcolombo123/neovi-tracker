@@ -8,16 +8,16 @@ export const ROLES = {
 
 // ─── PARTNERS ───────────────────────────────────────────────────────────────
 export const PARTNERS = {
-  'Neovi PM':       {company:'Neovi',      email:'pm@neovi.com'},
-  'Spacial':        {company:'Spacial',    email:'dan@spacial.com'},
-  'Spacial/Permit': {company:'Spacial',    email:'barbara@spacial.com'},
+  'Neovi PM':       {company:'Neovi',      email:'pm@neovi.co'},
+  'Spacial':        {company:'Spacial',    email:'dan@spacial.io'},
+  'Spacial/Permit': {company:'Spacial',    email:'barbara@spacial.io'},
   'Greenberg':      {company:'Greenberg',  email:'maor@greenberg.com'},
   'ACE':            {company:'ACE',        email:'ace@acengineers.com'},
   'Vault Studio':   {company:'Vault Studio',email:'vault@vaultstudio.com'},
-  'Neovi Eng':      {company:'Neovi',      email:'amit@neovi.com'},
-  'Neovi Fab':      {company:'Neovi',      email:'francesca@neovi.com'},
-  'Neovi Found':    {company:'Neovi',      email:'kyle@neovi.com'},
-  'Neovi Assembly': {company:'Neovi',      email:'didier@neovi.com'},
+  'Neovi Eng':      {company:'Neovi',      email:'amit@neovi.co'},
+  'Neovi Fab':      {company:'Neovi',      email:'francesca@neovi.co'},
+  'Neovi Found':    {company:'Neovi',      email:'kyle@neovi.co'},
+  'Neovi Assembly': {company:'Neovi',      email:'didier@neovi.co'},
   'Greenberg+Neovi':{company:'Greenberg + Neovi',email:'maor@greenberg.com'},
 };
 

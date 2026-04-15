@@ -43,6 +43,9 @@ export function getPhase2(type, ir) {
   const irTasks = ir === 'yes' ? [
     'Pre-application design review (Spacial + Neovi page turn)',
     'Planning IR — formal application submitted (Spacial manages)',
+    'Planning IR comments received',
+    'Planning IR response submitted',
+    'Planning IR approval received',
   ] : [];
 
   const tasks = isClient ? [
