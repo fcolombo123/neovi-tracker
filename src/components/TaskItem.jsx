@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext.jsx';
+import { supabase } from '../lib/supabase';
 import { fmtDate } from '../utils.js';
 
 export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIndex, canEdit }) {
@@ -7,6 +8,38 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   const t = task;
   const [editingNote, setEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(t.note || '');
+  const [showAssign, setShowAssign] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [assignedName, setAssignedName] = useState(null);
+
+  // Fetch assigned name on mount
+  useEffect(() => {
+    if (t.assignedTo) {
+      supabase.from('team_members').select('name, email').eq('id', t.assignedTo).single()
+        .then(({ data }) => { if (data) setAssignedName(data.name); });
+    }
+  }, [t.assignedTo]);
+
+  const loadTeam = async () => {
+    const { data } = await supabase.from('team_members').select('id, name, company').order('name');
+    setTeamMembers(data || []);
+    setShowAssign(true);
+  };
+
+  const assignTo = async (memberId) => {
+    if (useSeedMode) {
+      // Not supported in seed mode
+    } else {
+      await updateTask(t.id, { assignedTo: memberId });
+    }
+    setShowAssign(false);
+    if (memberId) {
+      const m = teamMembers.find(x => x.id === memberId);
+      setAssignedName(m?.name || null);
+    } else {
+      setAssignedName(null);
+    }
+  };
 
   const toggleDone = async () => {
     if (!canEdit) return;
@@ -46,11 +79,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
         return next;
       });
     } else {
-      try {
-        await updateTask(t.id, { stuck: newStuck });
-      } catch (e) {
-        console.error('Failed to toggle stuck:', e);
-      }
+      await updateTask(t.id, { stuck: newStuck });
     }
   };
 
@@ -94,10 +123,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   return (
     <div
       className={`task-row${t.critical ? ' crit' : ''}`}
-      style={isStuck ? {
-        background: 'var(--red-bg)',
-        borderLeft: '3px solid var(--red)',
-      } : {}}
+      style={isStuck ? { background: 'var(--red-bg)', borderLeft: '3px solid var(--red)' } : {}}
     >
       <button
         className={`tcheck${t.done ? ' done' : ''}`}
@@ -116,6 +142,11 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
           )}
           {t.name}
         </div>
+        {assignedName && (
+          <div style={{ fontSize: '10px', color: 'var(--accent-dark)', marginTop: '1px' }}>
+            &#9679; {assignedName}
+          </div>
+        )}
         {t.note && !editingNote && (
           <div className="tnote">{t.note}</div>
         )}
@@ -131,6 +162,34 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
               <button className="btn" style={{ fontSize: '10px', padding: '2px 6px' }} onClick={saveNote}>Save</button>
               <button className="btn" style={{ fontSize: '10px', padding: '2px 6px' }} onClick={() => setEditingNote(false)}>Cancel</button>
             </div>
+          </div>
+        )}
+        {showAssign && (
+          <div style={{
+            marginTop: '4px', background: 'var(--bg2)', border: '0.5px solid var(--border2)',
+            borderRadius: 'var(--r)', padding: '6px', maxHeight: '150px', overflowY: 'auto',
+          }}>
+            <div
+              style={{ fontSize: '11px', padding: '3px 6px', cursor: 'pointer', color: 'var(--text3)' }}
+              onClick={() => assignTo(null)}
+            >
+              Unassign
+            </div>
+            {teamMembers.map(m => (
+              <div
+                key={m.id}
+                style={{
+                  fontSize: '11px', padding: '3px 6px', cursor: 'pointer',
+                  borderRadius: '3px',
+                  background: t.assignedTo === m.id ? 'var(--accent-bg)' : 'transparent',
+                }}
+                onClick={() => assignTo(m.id)}
+                onMouseOver={e => e.currentTarget.style.background = 'var(--accent-bg)'}
+                onMouseOut={e => e.currentTarget.style.background = t.assignedTo === m.id ? 'var(--accent-bg)' : 'transparent'}
+              >
+                {m.name} <span style={{ color: 'var(--text3)' }}>({m.company})</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -155,6 +214,14 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
             title={isStuck ? 'Unstick' : 'Mark as stuck'}
           >
             {isStuck ? 'UNSTICK' : 'Stuck?'}
+          </button>
+          <button
+            className="btn"
+            style={{ fontSize: '9px', padding: '2px 6px', color: 'var(--accent-dark)' }}
+            onClick={loadTeam}
+            title="Assign team member"
+          >
+            {assignedName ? '\u21BB' : 'Assign'}
           </button>
           <button
             className="btn"
