@@ -33,7 +33,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   };
 
   const toggleStuck = async () => {
-    if (!canEdit) return;
+    if (!canEdit || t.done) return;
     const newStuck = !t.stuck;
     if (useSeedMode) {
       setProjects(prev => {
@@ -46,7 +46,11 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
         return next;
       });
     } else {
-      await updateTask(t.id, { stuck: newStuck });
+      try {
+        await updateTask(t.id, { stuck: newStuck });
+      } catch (e) {
+        console.error('Failed to toggle stuck:', e);
+      }
     }
   };
 
@@ -88,7 +92,13 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   const isStuck = t.stuck && !t.done;
 
   return (
-    <div className={`task-row${t.critical ? ' crit' : ''}`} style={isStuck ? { background: 'var(--red-bg)', borderLeft: '3px solid var(--red)' } : {}}>
+    <div
+      className={`task-row${t.critical ? ' crit' : ''}`}
+      style={isStuck ? {
+        background: 'var(--red-bg)',
+        borderLeft: '3px solid var(--red)',
+      } : {}}
+    >
       <button
         className={`tcheck${t.done ? ' done' : ''}`}
         onClick={toggleDone}
@@ -98,7 +108,12 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={`tlbl${t.done ? ' done' : ''}`}>
-          {isStuck && <span style={{ color: 'var(--red-text)', fontWeight: 600, marginRight: '4px' }}>STUCK</span>}
+          {isStuck && (
+            <span style={{
+              background: 'var(--red)', color: '#fff', fontSize: '9px', fontWeight: 700,
+              padding: '1px 5px', borderRadius: '3px', marginRight: '5px', verticalAlign: 'middle',
+            }}>STUCK</span>
+          )}
           {t.name}
         </div>
         {t.note && !editingNote && (
@@ -125,15 +140,21 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
           {fmtDate(t.dueDate)}
         </span>
       )}
-      {canEdit && (
+      {canEdit && !t.done && (
         <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
           <button
             className="btn"
-            style={{ fontSize: '10px', padding: '1px 4px', color: isStuck ? 'var(--red-text)' : 'var(--text3)', fontWeight: isStuck ? 700 : 400 }}
+            style={{
+              fontSize: '9px', padding: '2px 6px',
+              background: isStuck ? 'var(--red)' : 'none',
+              color: isStuck ? '#fff' : 'var(--text3)',
+              borderColor: isStuck ? 'var(--red)' : undefined,
+              fontWeight: isStuck ? 700 : 400,
+            }}
             onClick={toggleStuck}
             title={isStuck ? 'Unstick' : 'Mark as stuck'}
           >
-            {isStuck ? '\u26A0' : '\u26A0'}
+            {isStuck ? 'UNSTICK' : 'Stuck?'}
           </button>
           <button
             className="btn"
