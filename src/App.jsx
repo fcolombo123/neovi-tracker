@@ -82,6 +82,7 @@ function AppContent() {
               canEdit={canEdit}
               onBack={() => setDrilldownId(null)}
               isDrilldown={true}
+              onProjectDeleted={() => { setDrilldownId(null); setSelectedId(null); }}
             />
           ) : selectedId ? (
             <div className="two-col">
@@ -97,6 +98,7 @@ function AppContent() {
                 projectId={selectedId}
                 canEdit={canEdit}
                 isDrilldown={false}
+                onProjectDeleted={() => setSelectedId(null)}
               />
             </div>
           ) : (

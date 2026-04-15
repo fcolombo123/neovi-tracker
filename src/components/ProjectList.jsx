@@ -6,10 +6,13 @@ import { pctWork } from '../queries.js';
 export default function ProjectList({ currentRole, selectedId, onSelect, onDeselect, onDrilldown, layout }) {
   const { projects, updateProject } = useData();
   const [sortBy, setSortBy] = useState('custom');
+  const [showArchived, setShowArchived] = useState(false);
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
 
-  const visibleProjects = currentRole === 'client' ? projects.slice(0, 1) : projects;
+  const allVisible = currentRole === 'client' ? projects.slice(0, 1) : projects;
+  const visibleProjects = showArchived ? allVisible : allVisible.filter(p => !p.archived);
+  const archivedCount = allVisible.filter(p => p.archived).length;
 
   const sorted = [...visibleProjects].sort((a, b) => {
     if (sortBy === 'progress-asc') return pctWork(a) - pctWork(b);
@@ -63,6 +66,11 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDesel
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginBottom: '8px' }}>
+          {archivedCount > 0 && (
+            <button className="btn" style={{ fontSize: '11px' }} onClick={() => setShowArchived(!showArchived)}>
+              {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+            </button>
+          )}
           <button className="btn" style={{ fontSize: '11px' }} onClick={cycleSortBy}>
             Sort: {sortLabel}
           </button>

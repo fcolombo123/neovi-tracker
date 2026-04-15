@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext.jsx';
 import PhaseBlock from './PhaseBlock.jsx';
 import { pctWork } from '../queries.js';
 
-function EditProjectModal({ project, onClose, onSave }) {
+function EditProjectModal({ project, onClose, onSave, onDelete, onArchive }) {
   const [name, setName] = useState(project.name || '');
   const [address, setAddress] = useState(project.address || '');
   const [type, setType] = useState(project.type || 'client');
@@ -101,17 +101,40 @@ function EditProjectModal({ project, onClose, onSave }) {
           />
         </div>
 
-        <div className="modal-actions">
-          <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Save changes</button>
+        <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              className="btn"
+              style={{ color: 'var(--accent-dark)', fontSize: '11px' }}
+              onClick={() => { onArchive && onArchive(); onClose(); }}
+            >
+              {project.archived ? 'Unarchive' : 'Archive'}
+            </button>
+            <button
+              className="btn"
+              style={{ color: 'var(--red-text)', fontSize: '11px' }}
+              onClick={() => {
+                if (window.confirm('Delete "' + project.name + '" permanently? This cannot be undone.')) {
+                  onDelete && onDelete();
+                  onClose();
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button className="btn" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSubmit}>Save changes</button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown }) {
-  const { projects, updateProject, useSeedMode, setProjects } = useData();
+export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, onProjectDeleted }) {
+  const { projects, updateProject, deleteProject, archiveProject, useSeedMode, setProjects } = useData();
   const p = projects.find(x => x.id === projectId);
   const [expandAll, setExpandAll] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -197,6 +220,14 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown })
           project={p}
           onClose={() => setEditing(false)}
           onSave={handleSave}
+          onDelete={async () => {
+            await deleteProject(p.id);
+            onProjectDeleted && onProjectDeleted();
+          }}
+          onArchive={async () => {
+            await archiveProject(p.id, !p.archived);
+            onProjectDeleted && onProjectDeleted();
+          }}
         />
       )}
     </div>

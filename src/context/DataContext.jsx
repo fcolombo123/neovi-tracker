@@ -358,6 +358,24 @@ export function DataProvider({ children, user }) {
     return toCamelObj(newProj);
   }
 
+  async function deleteProject(projectId) {
+    const { error: err } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+    if (err) throw err;
+    await fetchProjects();
+  }
+
+  async function archiveProject(projectId, archived = true) {
+    const { error: err } = await supabase
+      .from('projects')
+      .update({ archived })
+      .eq('id', projectId);
+    if (err) throw err;
+    await fetchProjects();
+  }
+
   const value = {
     projects,
     setProjects,
@@ -371,6 +389,8 @@ export function DataProvider({ children, user }) {
     updateProject,
     updateGateItem,
     createProject,
+    deleteProject,
+    archiveProject,
   };
 
   return (
