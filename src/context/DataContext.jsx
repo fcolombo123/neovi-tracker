@@ -66,9 +66,9 @@ function shapeProjects(projects, phases, tasks, taskGroups, gateItems) {
   const standaloneByPhase = {};
   const tasksByGroup = {};
   for (const t of tasks) {
-    if (t.taskGroupId) {
-      if (!tasksByGroup[t.taskGroupId]) tasksByGroup[t.taskGroupId] = [];
-      tasksByGroup[t.taskGroupId].push(t);
+    if (t.groupId) {
+      if (!tasksByGroup[t.groupId]) tasksByGroup[t.groupId] = [];
+      tasksByGroup[t.groupId].push(t);
     } else {
       const phId = t.phaseId;
       if (!standaloneByPhase[phId]) standaloneByPhase[phId] = [];
