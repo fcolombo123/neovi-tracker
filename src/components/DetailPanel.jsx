@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
+import { supabase } from '../lib/supabase';
 import PhaseBlock from './PhaseBlock.jsx';
 import { pctWork } from '../queries.js';
+import { getPhase1, getPhase2 } from '../playbook.js';
 
 function EditProjectModal({ project, onClose, onSave, onDelete, onArchive }) {
   const [name, setName] = useState(project.name || '');
@@ -134,7 +136,7 @@ function EditProjectModal({ project, onClose, onSave, onDelete, onArchive }) {
 }
 
 export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, onProjectDeleted }) {
-  const { projects, updateProject, deleteProject, archiveProject, useSeedMode, setProjects } = useData();
+  const { projects, updateProject, deleteProject, archiveProject, fetchProjects, useSeedMode, setProjects } = useData();
   const p = projects.find(x => x.id === projectId);
   const [expandAll, setExpandAll] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -142,6 +144,24 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, o
   if (!p) return <div className="detail" style={{ color: 'var(--text2)', padding: '20px', textAlign: 'center' }}>Select a project</div>;
 
   const ir = p.planningIr || p.planningIR || 'unknown';
+
+  const rebuildPhaseTasks = async (phaseId, tasks, gates) => {
+    // Delete existing tasks and gates for this phase
+    await supabase.from('tasks').delete().eq('phase_id', phaseId);
+    await supabase.from('gate_items').delete().eq('phase_id', phaseId);
+    // Insert new tasks
+    if (tasks.length > 0) {
+      await supabase.from('tasks').insert(
+        tasks.map((name, i) => ({ phase_id: phaseId, name, done: false, sort_order: i + 1 }))
+      );
+    }
+    // Insert new gates
+    if (gates.length > 0) {
+      await supabase.from('gate_items').insert(
+        gates.map((item, i) => ({ phase_id: phaseId, item, done: false, sort_order: i + 1 }))
+      );
+    }
+  };
 
   const handleSave = async (updates) => {
     if (useSeedMode) {
@@ -152,7 +172,30 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, o
         return next;
       });
     } else {
+      const oldType = p.type;
+      const oldIr = p.planningIr || p.planningIR || 'unknown';
+      const newType = updates.type || oldType;
+      const newIr = updates.planningIr || oldIr;
+      const typeChanged = newType !== oldType;
+      const irChanged = newIr !== oldIr;
+
       await updateProject(p.id, updates);
+
+      // Rebuild Phase 1 & 2 tasks if type or IR changed
+      if (typeChanged || irChanged) {
+        const ph1 = p.phases.find(ph => ph.phaseNumber === 1 || ph.name === 'Project Kick Off');
+        const ph2 = p.phases.find(ph => ph.phaseNumber === 2 || ph.name === 'Schematic Design');
+        if (ph1) {
+          const tmpl = getPhase1(newType, newIr);
+          await rebuildPhaseTasks(ph1.id, tmpl.tasks, tmpl.gates);
+        }
+        if (ph2) {
+          const tmpl = getPhase2(newType, newIr);
+          await rebuildPhaseTasks(ph2.id, tmpl.tasks, tmpl.gates);
+        }
+        // Re-fetch to show updated tasks
+        await fetchProjects();
+      }
     }
   };
 
