@@ -164,6 +164,50 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, o
         </div>
       )}
       <div className="detail">
+        {/* Project photo */}
+        {p.photoUrl && (
+          <div style={{
+            position: 'relative', width: '100%', maxHeight: '200px', overflow: 'hidden',
+            borderRadius: 'var(--r)', marginBottom: '12px',
+          }}>
+            <img src={p.photoUrl} alt="" style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block', borderRadius: 'var(--r)' }} />
+            {canEdit && (
+              <label style={{
+                position: 'absolute', bottom: '8px', right: '8px',
+                background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '11px',
+                padding: '4px 10px', borderRadius: '10px', cursor: 'pointer',
+                backdropFilter: 'blur(2px)',
+              }}>
+                Change photo
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => handleSave({ photoUrl: ev.target.result });
+                  reader.readAsDataURL(file);
+                }} />
+              </label>
+            )}
+          </div>
+        )}
+        {!p.photoUrl && canEdit && (
+          <label style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '80px', background: 'var(--bg3)', borderRadius: 'var(--r)',
+            marginBottom: '12px', cursor: 'pointer', border: '1.5px dashed var(--border2)',
+            fontSize: '12px', color: 'var(--text3)',
+          }}>
+            + Add project photo
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => handleSave({ photoUrl: ev.target.result });
+              reader.readAsDataURL(file);
+            }} />
+          </label>
+        )}
+
         <div style={{ marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '2px' }}>{p.name}</div>
