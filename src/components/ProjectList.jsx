@@ -5,8 +5,13 @@ import { pctWork } from '../queries.js';
 
 export default function ProjectList({ currentRole, selectedId, onSelect, onDeselect, onDrilldown, layout }) {
   const { projects, updateProject } = useData();
-  const [sortBy, setSortBy] = useState('custom');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('neovi-sort') || 'custom');
   const [showArchived, setShowArchived] = useState(false);
+
+  const setSort = (val) => {
+    setSortBy(val);
+    localStorage.setItem('neovi-sort', val);
+  };
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
 
@@ -53,9 +58,9 @@ export default function ProjectList({ currentRole, selectedId, onSelect, onDesel
   };
 
   const cycleSortBy = () => {
-    if (sortBy === 'custom') setSortBy('progress-asc');
-    else if (sortBy === 'progress-asc') setSortBy('progress-desc');
-    else setSortBy('custom');
+    if (sortBy === 'custom') setSort('progress-asc');
+    else if (sortBy === 'progress-asc') setSort('progress-desc');
+    else setSort('custom');
   };
 
   const sortLabel = sortBy === 'custom' ? 'Custom order'
