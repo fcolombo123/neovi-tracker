@@ -12,10 +12,9 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   const [teamMembers, setTeamMembers] = useState([]);
   const [assignedName, setAssignedName] = useState(null);
 
-  // Fetch assigned name on mount
   useEffect(() => {
     if (t.assignedTo) {
-      supabase.from('team_members').select('name, email').eq('id', t.assignedTo).single()
+      supabase.from('team_members').select('name').eq('id', t.assignedTo).single()
         .then(({ data }) => { if (data) setAssignedName(data.name); });
     }
   }, [t.assignedTo]);
@@ -27,11 +26,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   };
 
   const assignTo = async (memberId) => {
-    if (useSeedMode) {
-      // Not supported in seed mode
-    } else {
-      await updateTask(t.id, { assignedTo: memberId });
-    }
+    await updateTask(t.id, { assignedTo: memberId });
     setShowAssign(false);
     if (memberId) {
       const m = teamMembers.find(x => x.id === memberId);
@@ -41,25 +36,30 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
     }
   };
 
+  const seedUpdate = (fn) => {
+    setProjects(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const p = next.find(x => x.id === project.id);
+      if (!p) return prev;
+      const ph = p.phases[phaseIndex];
+      let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
+      if (target) fn(target);
+      return next;
+    });
+  };
+
   const toggleDone = async () => {
     if (!canEdit) return;
     const newDone = !t.done;
+    const today = new Date().toISOString().split('T')[0];
     if (useSeedMode) {
-      setProjects(prev => {
-        const next = JSON.parse(JSON.stringify(prev));
-        const p = next.find(x => x.id === project.id);
-        if (!p) return prev;
-        const ph = p.phases[phaseIndex];
-        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
-        if (target) {
-          target.done = newDone;
-          target.completedDate = newDone ? new Date().toISOString().split('T')[0] : null;
-          if (newDone) target.stuck = false;
-        }
-        return next;
+      seedUpdate(target => {
+        target.done = newDone;
+        target.completedDate = newDone ? today : null;
+        if (newDone) target.stuck = false;
       });
     } else {
-      const updates = { done: newDone, completedDate: newDone ? new Date().toISOString().split('T')[0] : null };
+      const updates = { done: newDone, completedDate: newDone ? today : null };
       if (newDone) updates.stuck = false;
       await updateTask(t.id, updates);
     }
@@ -69,15 +69,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
     if (!canEdit || t.done) return;
     const newStuck = !t.stuck;
     if (useSeedMode) {
-      setProjects(prev => {
-        const next = JSON.parse(JSON.stringify(prev));
-        const p = next.find(x => x.id === project.id);
-        if (!p) return prev;
-        const ph = p.phases[phaseIndex];
-        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
-        if (target) target.stuck = newStuck;
-        return next;
-      });
+      seedUpdate(target => { target.stuck = newStuck; });
     } else {
       await updateTask(t.id, { stuck: newStuck });
     }
@@ -86,15 +78,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
   const toggleCritical = async () => {
     if (!canEdit) return;
     if (useSeedMode) {
-      setProjects(prev => {
-        const next = JSON.parse(JSON.stringify(prev));
-        const p = next.find(x => x.id === project.id);
-        if (!p) return prev;
-        const ph = p.phases[phaseIndex];
-        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
-        if (target) target.critical = !target.critical;
-        return next;
-      });
+      seedUpdate(target => { target.critical = !target.critical; });
     } else {
       await updateTask(t.id, { critical: !t.critical });
     }
@@ -102,15 +86,7 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
 
   const saveNote = async () => {
     if (useSeedMode) {
-      setProjects(prev => {
-        const next = JSON.parse(JSON.stringify(prev));
-        const p = next.find(x => x.id === project.id);
-        if (!p) return prev;
-        const ph = p.phases[phaseIndex];
-        let target = groupIndex !== undefined ? ph.tasks[groupIndex]?.tasks?.[taskIndex] : ph.tasks[taskIndex];
-        if (target) target.note = noteText;
-        return next;
-      });
+      seedUpdate(target => { target.note = noteText; });
     } else {
       await updateTask(t.id, { note: noteText });
     }
@@ -169,20 +145,11 @@ export default function TaskItem({ task, project, phaseIndex, groupIndex, taskIn
             marginTop: '4px', background: 'var(--bg2)', border: '0.5px solid var(--border2)',
             borderRadius: 'var(--r)', padding: '6px', maxHeight: '150px', overflowY: 'auto',
           }}>
-            <div
-              style={{ fontSize: '11px', padding: '3px 6px', cursor: 'pointer', color: 'var(--text3)' }}
-              onClick={() => assignTo(null)}
-            >
-              Unassign
-            </div>
+            <div style={{ fontSize: '11px', padding: '3px 6px', cursor: 'pointer', color: 'var(--text3)' }} onClick={() => assignTo(null)}>Unassign</div>
             {teamMembers.map(m => (
               <div
                 key={m.id}
-                style={{
-                  fontSize: '11px', padding: '3px 6px', cursor: 'pointer',
-                  borderRadius: '3px',
-                  background: t.assignedTo === m.id ? 'var(--accent-bg)' : 'transparent',
-                }}
+                style={{ fontSize: '11px', padding: '3px 6px', cursor: 'pointer', borderRadius: '3px', background: t.assignedTo === m.id ? 'var(--accent-bg)' : 'transparent' }}
                 onClick={() => assignTo(m.id)}
                 onMouseOver={e => e.currentTarget.style.background = 'var(--accent-bg)'}
                 onMouseOut={e => e.currentTarget.style.background = t.assignedTo === m.id ? 'var(--accent-bg)' : 'transparent'}
