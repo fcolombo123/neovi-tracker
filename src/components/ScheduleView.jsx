@@ -38,11 +38,8 @@ export default function ScheduleView() {
       const pctNum = pct ? Math.round(parseFloat(pct) * 100) : 0;
       phases.push({ name, start: new Date(start), end: end ? new Date(end) : new Date(start), pct: pctNum });
     };
-    // Pre-construction from sheet status
-    if (s.engineering_pct) {
-      const engPct = Math.round(parseFloat(s.engineering_pct) * 100);
-      // Use schedule column dates if available, otherwise skip
-    }
+    addPhase('Engineering', s.engineering_start, s.engineering_end, s.engineering_pct);
+    addPhase('Permitting', s.permitting_start, s.permitting_end, s.city_permitting_pct);
     addPhase('Fabrication', s.fabrication_start, s.fabrication_end, s.fabrication_pct);
     addPhase('Foundation', s.foundation_start, s.foundation_end, s.foundation_pct);
     addPhase('Panel Assembly', s.panel_assembly_start, s.panel_assembly_end, s.panel_assembly_pct);

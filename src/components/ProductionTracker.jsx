@@ -245,10 +245,12 @@ export default function ProductionTracker({ projectName, phases }) {
         <StatusRow label="Floor Plan" status={s.floor_plan_status} pct={s.floor_plan_pct}
           mismatchCount={floorPlanDone ? getMismatchCount(phases, ['Schematic Design']) : 0} />
         <StatusRow label="Engineering" status={s.engineering_status} pct={s.engineering_pct}
+          dates={fmtRange(s.engineering_start, s.engineering_end)}
           mismatchCount={engDone ? getMismatchCount(phases, ['Design Development']) : 0} />
         <StatusRow label="State Permitting" status={s.state_permitting_status} pct={s.state_permitting_pct}
           mismatchCount={stateDone ? getMismatchCount(phases, ['Design Development']) : 0} />
         <StatusRow label="City Permitting" status={s.city_permitting_status} pct={s.city_permitting_pct}
+          dates={fmtRange(s.permitting_start, s.permitting_end)}
           mismatchCount={cityDone ? getMismatchCount(phases, ['Municipal Permitting']) : 0} />
 
         {/* Construction */}
