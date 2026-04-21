@@ -271,13 +271,19 @@ export function DataProvider({ children, user }) {
   }
 
   async function updateProject(projectId, updates) {
+    // Optimistic local update
+    setProjects(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const proj = next.find(x => x.id === projectId);
+      if (proj) Object.assign(proj, updates);
+      return next;
+    });
     const snakeUpdates = toSnakeObj(updates);
     const { error: err } = await supabase
       .from('projects')
       .update(snakeUpdates)
       .eq('id', projectId);
-    if (err) throw err;
-    await fetchProjects();
+    if (err) console.error('Project update failed:', err.message);
   }
 
   async function updateGateItem(gateItemId, updates) {
