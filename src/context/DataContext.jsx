@@ -180,9 +180,9 @@ export function DataProvider({ children, user }) {
       const [projRes, phaseRes, taskRes, groupRes, gateRes] = await Promise.all([
         supabase.from('projects').select('*').order('created_at'),
         supabase.from('phases').select('*').order('phase_number'),
-        supabase.from('tasks').select('*').order('sort_order'),
-        supabase.from('task_groups').select('*').order('sort_order'),
-        supabase.from('gate_items').select('*').order('sort_order'),
+        supabase.from('tasks').select('*').order('sort_order').range(0, 4999),
+        supabase.from('task_groups').select('*').order('sort_order').range(0, 4999),
+        supabase.from('gate_items').select('*').order('sort_order').range(0, 4999),
       ]);
 
       // Check for errors
