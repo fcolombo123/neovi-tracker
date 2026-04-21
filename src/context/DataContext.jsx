@@ -177,25 +177,36 @@ export function DataProvider({ children, user }) {
         setLoading(false);
         return;
       }
-      const [projRes, phaseRes, taskRes, groupRes, gateRes] = await Promise.all([
-        supabase.from('projects').select('*').order('created_at'),
-        supabase.from('phases').select('*').order('phase_number'),
-        supabase.from('tasks').select('*').order('sort_order').limit(5000),
-        supabase.from('task_groups').select('*').order('sort_order').limit(5000),
-        supabase.from('gate_items').select('*').order('sort_order').limit(5000),
-      ]);
-
-      // Check for errors
-      for (const res of [projRes, phaseRes, taskRes, groupRes, gateRes]) {
-        if (res.error) throw res.error;
+      // Helper to fetch all rows (Supabase caps at 1000 per query)
+      async function fetchAll(table, orderCol) {
+        let all = [];
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from(table).select('*').order(orderCol).range(from, from + pageSize - 1);
+          if (error) throw error;
+          all = all.concat(data || []);
+          if (!data || data.length < pageSize) break;
+          from += pageSize;
+        }
+        return all;
       }
 
+      const [projData, phaseData, taskData, groupData, gateData] = await Promise.all([
+        fetchAll('projects', 'created_at'),
+        fetchAll('phases', 'phase_number'),
+        fetchAll('tasks', 'sort_order'),
+        fetchAll('task_groups', 'sort_order'),
+        fetchAll('gate_items', 'sort_order'),
+      ]);
+
       const shaped = shapeProjects(
-        (projRes.data || []).map(toCamelObj),
-        (phaseRes.data || []).map(toCamelObj),
-        (taskRes.data || []).map(toCamelObj),
-        (groupRes.data || []).map(toCamelObj),
-        (gateRes.data || []).map(toCamelObj),
+        projData.map(toCamelObj),
+        phaseData.map(toCamelObj),
+        taskData.map(toCamelObj),
+        groupData.map(toCamelObj),
+        gateData.map(toCamelObj),
       );
 
       setProjects(shaped);
