@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { fmtDate } from '../utils.js';
+import { draftEmail } from '../lib/ai.js';
 
 function ProgressBar({ done, total, label }) {
   const pct = total ? Math.round(100 * done / total) : 0;
@@ -70,14 +71,19 @@ function getMismatchCount(phases, phaseNames) {
 
 export default function ProductionTracker({ projectName, phases }) {
   const [syncData, setSyncData] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [draftingIdx, setDraftingIdx] = useState(null);
+  const [emailDraft, setEmailDraft] = useState(null);
 
   useEffect(() => {
     async function fetch() {
-      const { data } = await supabase
-        .from('sheet_sync')
-        .select('*')
-        .ilike('project_name', `%${projectName}%`);
+      const [sheetRes, teamRes] = await Promise.all([
+        supabase.from('sheet_sync').select('*').ilike('project_name', `%${projectName}%`),
+        supabase.from('team_members').select('name, email, initials'),
+      ]);
+      setTeamMembers(teamRes.data || []);
+      const data = sheetRes.data;
       setSyncData(data && data.length > 0 ? data[0] : null);
       setLoading(false);
     }
@@ -89,13 +95,45 @@ export default function ProductionTracker({ projectName, phases }) {
 
   const s = syncData;
   const notes = typeof s.notes === 'string' ? JSON.parse(s.notes) : (s.notes || []);
-  const hasFab = s.fab_floor_req || s.fab_ext_req || s.fab_int_req;
-  const hasFound = s.found_piers_req || s.found_beams_req;
-  const hasAssy = s.assy_floor_req || s.assy_ext_req || s.assy_int_req || s.assy_truss_req || s.assy_roof_req;
+  const hasFab = !!(s.fab_floor_req || s.fab_ext_req || s.fab_int_req);
+  const hasFound = !!(s.found_piers_req || s.found_beams_req);
+  const hasAssy = !!(s.assy_floor_req || s.assy_ext_req || s.assy_int_req || s.assy_truss_req || s.assy_roof_req);
 
   const fmtRange = (start, end) => {
     if (!start && !end) return null;
     return (start ? fmtDate(start) : '—') + ' → ' + (end ? fmtDate(end) : '—');
+  };
+
+  const resolveOwner = (initials) => {
+    if (!initials) return null;
+    // Handle multiple initials like "BB / DH / KS"
+    const parts = initials.split(/\s*\/\s*/);
+    return parts.map(init => {
+      const member = teamMembers.find(m => m.initials === init.trim());
+      return member ? { name: member.name, email: member.email, initials: init.trim() } : { name: init.trim(), email: null, initials: init.trim() };
+    });
+  };
+
+  const handleDraftEmail = async (note, idx) => {
+    setDraftingIdx(idx);
+    setEmailDraft(null);
+    try {
+      const owners = resolveOwner(note.owner);
+      const ownerName = owners ? owners.map(o => o.name).join(', ') : 'Team';
+      const ownerEmail = owners ? owners.filter(o => o.email).map(o => o.email).join(', ') : '';
+      const result = await draftEmail({
+        note: note.text,
+        owner: ownerName,
+        ownerEmail,
+        projectName,
+        projectType: s.project_type || '',
+      });
+      setEmailDraft({ ...result, to: ownerEmail, idx });
+    } catch (e) {
+      console.error('Draft failed:', e);
+      setEmailDraft({ subject: 'Error', body: e.message, to: '', idx });
+    }
+    setDraftingIdx(null);
   };
 
   // Mismatch counts
@@ -121,16 +159,75 @@ export default function ProductionTracker({ projectName, phases }) {
           <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '6px' }}>
             Notes
           </div>
-          {notes.map((n, i) => (
-            <div key={i} style={{
-              display: 'flex', gap: '8px', padding: '4px 0',
-              borderBottom: i < notes.length - 1 ? '0.5px solid var(--border)' : 'none',
-            }}>
-              <div style={{ fontSize: '11px', flex: 1 }}>{n.text}</div>
-              {n.owner && <span style={{ fontSize: '10px', color: 'var(--accent-dark)', fontWeight: 500, flexShrink: 0 }}>{n.owner}</span>}
-              {n.status && <span style={{ fontSize: '10px', color: 'var(--text3)', fontStyle: 'italic', flexShrink: 0 }}>{n.status}</span>}
+          {notes.map((n, i) => {
+            const owners = resolveOwner(n.owner);
+            const ownerNames = owners ? owners.map(o => o.name).join(', ') : '';
+            return (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                borderBottom: i < notes.length - 1 ? '0.5px solid var(--border)' : 'none',
+              }}>
+                <div style={{ fontSize: '11px', flex: 1 }}>{n.text}</div>
+                {ownerNames && <span style={{ fontSize: '10px', color: 'var(--accent-dark)', fontWeight: 500, flexShrink: 0 }}>{ownerNames}</span>}
+                {n.status && <span style={{ fontSize: '10px', color: 'var(--text3)', fontStyle: 'italic', flexShrink: 0 }}>{n.status}</span>}
+                <button
+                  className="btn"
+                  style={{ fontSize: '9px', padding: '2px 6px', color: 'var(--accent-dark)', flexShrink: 0 }}
+                  onClick={() => handleDraftEmail(n, i)}
+                  disabled={draftingIdx === i}
+                >
+                  {draftingIdx === i ? '...' : 'Draft email'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Email Draft Modal */}
+      {emailDraft && (
+        <div className="modal-backdrop open" onClick={() => setEmailDraft(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Email Draft</h2>
+            <div className="mf">
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '3px' }}>To</label>
+              <input
+                style={{ width: '100%', padding: '7px 10px', fontSize: '13px', border: '0.5px solid var(--border2)', borderRadius: 'var(--r)', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'inherit' }}
+                value={emailDraft.to}
+                onChange={e => setEmailDraft({ ...emailDraft, to: e.target.value })}
+              />
             </div>
-          ))}
+            <div className="mf">
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '3px' }}>Subject</label>
+              <input
+                style={{ width: '100%', padding: '7px 10px', fontSize: '13px', border: '0.5px solid var(--border2)', borderRadius: 'var(--r)', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'inherit' }}
+                value={emailDraft.subject}
+                onChange={e => setEmailDraft({ ...emailDraft, subject: e.target.value })}
+              />
+            </div>
+            <div className="mf">
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '3px' }}>Body</label>
+              <textarea
+                style={{ width: '100%', padding: '7px 10px', fontSize: '13px', border: '0.5px solid var(--border2)', borderRadius: 'var(--r)', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'inherit', resize: 'vertical', minHeight: '120px', lineHeight: '1.5' }}
+                value={emailDraft.body}
+                onChange={e => setEmailDraft({ ...emailDraft, body: e.target.value })}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setEmailDraft(null)}>Close</button>
+              <button className="btn" onClick={() => {
+                navigator.clipboard.writeText(`Subject: ${emailDraft.subject}\n\n${emailDraft.body}`);
+              }}>Copy to clipboard</button>
+              <a
+                href={`mailto:${emailDraft.to}?subject=${encodeURIComponent(emailDraft.subject)}&body=${encodeURIComponent(emailDraft.body)}`}
+                className="btn btn-primary"
+                style={{ textDecoration: 'none', textAlign: 'center' }}
+                onClick={() => setEmailDraft(null)}
+              >
+                Open in email
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
