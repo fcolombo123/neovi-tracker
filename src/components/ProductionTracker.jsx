@@ -172,61 +172,51 @@ export default function ProductionTracker({ projectName, phases }) {
         </div>
       )}
 
-      {/* Construction Schedule */}
+      {/* Construction Progress */}
       <div style={{
         background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
         marginBottom: '8px', border: '0.5px solid var(--border)',
       }}>
         <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '6px' }}>
-          Construction Schedule
+          Construction Progress
         </div>
+
+        {/* Fabrication */}
         <PhaseSchedule label="Fabrication" start={s.fabrication_start} end={s.fabrication_end} pct={s.fabrication_pct} />
+        {hasFab && (
+          <div style={{ paddingLeft: '16px', marginBottom: '6px' }}>
+            {s.fab_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.fab_floor_done} total={s.fab_floor_req} />}
+            {s.fab_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.fab_ext_done} total={s.fab_ext_req} />}
+            {s.fab_int_req > 0 && <ProgressBar label="Interior Walls" done={s.fab_int_done} total={s.fab_int_req} />}
+          </div>
+        )}
+
+        {/* Foundation */}
         <PhaseSchedule label="Foundation" start={s.foundation_start} end={s.foundation_end} pct={s.foundation_pct} />
+        {hasFound && (
+          <div style={{ paddingLeft: '16px', marginBottom: '6px' }}>
+            {s.found_piers_req > 0 && <ProgressBar label="Piers" done={s.found_piers_done} total={s.found_piers_req} />}
+            {s.found_beams_req > 0 && <ProgressBar label="Beams" done={s.found_beams_done} total={s.found_beams_req} />}
+          </div>
+        )}
+
+        {/* Panel Assembly */}
         <PhaseSchedule label="Panel Assembly" start={s.panel_assembly_start} end={s.panel_assembly_end} pct={s.panel_assembly_pct} />
+        {hasAssy && (
+          <div style={{ paddingLeft: '16px', marginBottom: '6px' }}>
+            {s.assy_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.assy_floor_done} total={s.assy_floor_req} />}
+            {s.assy_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.assy_ext_done} total={s.assy_ext_req} />}
+            {s.assy_int_req > 0 && <ProgressBar label="Interior Walls" done={s.assy_int_done} total={s.assy_int_req} />}
+            {s.assy_truss_req > 0 && <ProgressBar label="Roof Trusses" done={s.assy_truss_done} total={s.assy_truss_req} />}
+            {s.assy_roof_req > 0 && <ProgressBar label="Roof Panels" done={s.assy_roof_done} total={s.assy_roof_req} />}
+          </div>
+        )}
+
+        {/* Finishing */}
         <PhaseSchedule label="Finishing" start={s.finishing_start} end={s.finishing_end} pct={s.finishing_pct} />
       </div>
 
-      {/* Panel & Component Counts */}
-      {(hasFab || hasFound || hasAssy) && (
-        <div style={{
-          background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
-          marginBottom: '8px', border: '0.5px solid var(--border)',
-        }}>
-          {hasFab && (
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
-                Fabrication
-              </div>
-              {s.fab_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.fab_floor_done} total={s.fab_floor_req} />}
-              {s.fab_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.fab_ext_done} total={s.fab_ext_req} />}
-              {s.fab_int_req > 0 && <ProgressBar label="Interior Walls" done={s.fab_int_done} total={s.fab_int_req} />}
-            </div>
-          )}
-          {hasFound && (
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
-                Foundation
-              </div>
-              {s.found_piers_req > 0 && <ProgressBar label="Piers" done={s.found_piers_done} total={s.found_piers_req} />}
-              {s.found_beams_req > 0 && <ProgressBar label="Beams" done={s.found_beams_done} total={s.found_beams_req} />}
-            </div>
-          )}
-          {hasAssy && (
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
-                Panel Assembly
-              </div>
-              {s.assy_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.assy_floor_done} total={s.assy_floor_req} />}
-              {s.assy_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.assy_ext_done} total={s.assy_ext_req} />}
-              {s.assy_int_req > 0 && <ProgressBar label="Interior Walls" done={s.assy_int_done} total={s.assy_int_req} />}
-              {s.assy_truss_req > 0 && <ProgressBar label="Roof Trusses" done={s.assy_truss_done} total={s.assy_truss_req} />}
-              {s.assy_roof_req > 0 && <ProgressBar label="Roof Panels" done={s.assy_roof_done} total={s.assy_roof_req} />}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Notes already rendered above */}
+      {/* All content is now combined above */}
     </div>
   );
 }
