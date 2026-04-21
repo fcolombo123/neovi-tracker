@@ -19,7 +19,8 @@ function ProgressBar({ done, total, label }) {
 }
 
 function StatusRow({ label, status, pct, dates, mismatchCount, children }) {
-  const pctNum = pct ? Math.round(parseFloat(pct) * 100) : 0;
+  const parsed = pct ? parseFloat(pct) : 0;
+  const pctNum = isNaN(parsed) ? 0 : Math.round(parsed * 100);
   const isDone = status === 'Complete' || status === 'Approved' || pctNum === 100;
   const isActive = !isDone && pctNum > 0;
 
@@ -55,7 +56,7 @@ function StatusRow({ label, status, pct, dates, mismatchCount, children }) {
           </span>
         )}
       </div>
-      {children && <div style={{ paddingLeft: '16px', paddingBottom: '4px' }}>{children}</div>}
+      {children != null && children !== false && <div style={{ paddingLeft: '16px', paddingBottom: '4px' }}>{children}</div>}
     </div>
   );
 }
@@ -252,28 +253,28 @@ export default function ProductionTracker({ projectName, phases }) {
 
         {/* Construction */}
         <StatusRow label="Fabrication" pct={s.fabrication_pct} dates={fmtRange(s.fabrication_start, s.fabrication_end)}>
-          {hasFab && <>
+          {hasFab ? <>
             {s.fab_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.fab_floor_done} total={s.fab_floor_req} />}
             {s.fab_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.fab_ext_done} total={s.fab_ext_req} />}
             {s.fab_int_req > 0 && <ProgressBar label="Interior Walls" done={s.fab_int_done} total={s.fab_int_req} />}
-          </>}
+          </> : null}
         </StatusRow>
 
         <StatusRow label="Foundation" pct={s.foundation_pct} dates={fmtRange(s.foundation_start, s.foundation_end)}>
-          {hasFound && <>
+          {hasFound ? <>
             {s.found_piers_req > 0 && <ProgressBar label="Piers" done={s.found_piers_done} total={s.found_piers_req} />}
             {s.found_beams_req > 0 && <ProgressBar label="Beams" done={s.found_beams_done} total={s.found_beams_req} />}
-          </>}
+          </> : null}
         </StatusRow>
 
         <StatusRow label="Panel Assembly" pct={s.panel_assembly_pct} dates={fmtRange(s.panel_assembly_start, s.panel_assembly_end)}>
-          {hasAssy && <>
+          {hasAssy ? <>
             {s.assy_floor_req > 0 && <ProgressBar label="Floor Cassettes" done={s.assy_floor_done} total={s.assy_floor_req} />}
             {s.assy_ext_req > 0 && <ProgressBar label="Exterior Walls" done={s.assy_ext_done} total={s.assy_ext_req} />}
             {s.assy_int_req > 0 && <ProgressBar label="Interior Walls" done={s.assy_int_done} total={s.assy_int_req} />}
             {s.assy_truss_req > 0 && <ProgressBar label="Roof Trusses" done={s.assy_truss_done} total={s.assy_truss_req} />}
             {s.assy_roof_req > 0 && <ProgressBar label="Roof Panels" done={s.assy_roof_done} total={s.assy_roof_req} />}
-          </>}
+          </> : null}
         </StatusRow>
 
         <StatusRow label="Finishing" pct={s.finishing_pct} dates={fmtRange(s.finishing_start, s.finishing_end)} />
