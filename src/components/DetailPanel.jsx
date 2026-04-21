@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
 import { supabase } from '../lib/supabase';
 import PhaseBlock from './PhaseBlock.jsx';
+import ProductionTracker from './ProductionTracker.jsx';
 import { pctWork } from '../queries.js';
 import { getPhase1, getPhase2 } from '../playbook.js';
 
@@ -282,6 +283,8 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, o
             <div className="val">{pctWork(p)}%</div>
           </div>
         </div>
+
+        <ProductionTracker projectName={p.name} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
           <div className="sec-lbl" style={{ marginBottom: 0 }}>Phases</div>
