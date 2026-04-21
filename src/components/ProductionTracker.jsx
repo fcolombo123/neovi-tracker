@@ -84,6 +84,38 @@ export default function ProductionTracker({ projectName }) {
         </div>
       </div>
 
+      {/* Spreadsheet Notes */}
+      {notes.length > 0 && (
+        <div style={{
+          background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
+          marginBottom: '8px', border: '0.5px solid var(--border)',
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '6px' }}>
+            Notes
+          </div>
+          {notes.map((n, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: '8px', padding: '4px 0',
+              borderBottom: i < notes.length - 1 ? '0.5px solid var(--border)' : 'none',
+            }}>
+              <div style={{ fontSize: '11px', flex: 1 }}>
+                {n.text}
+              </div>
+              {n.owner && (
+                <span style={{ fontSize: '10px', color: 'var(--accent-dark)', fontWeight: 500, flexShrink: 0 }}>
+                  {n.owner}
+                </span>
+              )}
+              {n.status && (
+                <span style={{ fontSize: '10px', color: 'var(--text3)', fontStyle: 'italic', flexShrink: 0 }}>
+                  {n.status}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Construction Schedule */}
       <div style={{
         background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
@@ -138,37 +170,7 @@ export default function ProductionTracker({ projectName }) {
         </div>
       )}
 
-      {/* Spreadsheet Notes */}
-      {notes.length > 0 && (
-        <div style={{
-          background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
-          border: '0.5px solid var(--border)',
-        }}>
-          <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '6px' }}>
-            Notes from Spreadsheet
-          </div>
-          {notes.map((n, i) => (
-            <div key={i} style={{
-              display: 'flex', gap: '8px', padding: '4px 0',
-              borderBottom: i < notes.length - 1 ? '0.5px solid var(--border)' : 'none',
-            }}>
-              <div style={{ fontSize: '11px', flex: 1 }}>
-                {n.text}
-              </div>
-              {n.owner && (
-                <span style={{ fontSize: '10px', color: 'var(--accent-dark)', fontWeight: 500, flexShrink: 0 }}>
-                  {n.owner}
-                </span>
-              )}
-              {n.status && (
-                <span style={{ fontSize: '10px', color: 'var(--text3)', fontStyle: 'italic', flexShrink: 0 }}>
-                  {n.status}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Notes already rendered above */}
     </div>
   );
 }
