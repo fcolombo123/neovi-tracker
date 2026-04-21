@@ -225,23 +225,49 @@ export function DataProvider({ children, user }) {
   }
 
   async function updateTask(taskId, updates) {
+    // Optimistic local update
+    setProjects(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      for (const proj of next) {
+        for (const ph of (proj.phases || [])) {
+          for (const t of (ph.tasks || [])) {
+            if (t.id === taskId) { Object.assign(t, updates); break; }
+            if (t.isGroup) {
+              for (const st of (t.tasks || [])) {
+                if (st.id === taskId) { Object.assign(st, updates); break; }
+              }
+            }
+          }
+        }
+      }
+      return next;
+    });
+    // Sync to DB
     const snakeUpdates = toSnakeObj(updates);
     const { error: err } = await supabase
       .from('tasks')
       .update(snakeUpdates)
       .eq('id', taskId);
-    if (err) throw err;
-    await fetchProjects();
+    if (err) console.error('Task update failed:', err.message);
   }
 
   async function updatePhase(phaseId, updates) {
+    // Optimistic local update
+    setProjects(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      for (const proj of next) {
+        for (const ph of (proj.phases || [])) {
+          if (ph.id === phaseId) { Object.assign(ph, updates); break; }
+        }
+      }
+      return next;
+    });
     const snakeUpdates = toSnakeObj(updates);
     const { error: err } = await supabase
       .from('phases')
       .update(snakeUpdates)
       .eq('id', phaseId);
-    if (err) throw err;
-    await fetchProjects();
+    if (err) console.error('Phase update failed:', err.message);
   }
 
   async function updateProject(projectId, updates) {
@@ -255,13 +281,24 @@ export function DataProvider({ children, user }) {
   }
 
   async function updateGateItem(gateItemId, updates) {
+    // Optimistic local update
+    setProjects(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      for (const proj of next) {
+        for (const ph of (proj.phases || [])) {
+          for (const g of (ph.gateChecklist || [])) {
+            if (g.id === gateItemId) { Object.assign(g, updates); break; }
+          }
+        }
+      }
+      return next;
+    });
     const snakeUpdates = toSnakeObj(updates);
     const { error: err } = await supabase
       .from('gate_items')
       .update(snakeUpdates)
       .eq('id', gateItemId);
-    if (err) throw err;
-    await fetchProjects();
+    if (err) console.error('Gate update failed:', err.message);
   }
 
   async function createProject(data) {
