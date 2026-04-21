@@ -14,7 +14,7 @@ Rules:
 - Direct and casual-professional (like a quick Slack message but in email form)
 - No "I hope this finds you well" or filler
 - Short subject line (under 8 words)
-- Sign off with just "Thanks" or "Thanks," and a dash and "Neovi PM"
+- Sign off with just "Thanks," followed by a new line and "Francesca"
 
 Respond as JSON only, no markdown: {"subject": "...", "body": "..."}`;
 
