@@ -3,20 +3,20 @@ const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_KEY;
 export async function draftEmail({ note, owner, ownerEmail, projectName, projectType }) {
   if (!ANTHROPIC_KEY) throw new Error('Anthropic API key not configured');
 
-  const prompt = `You are a project manager at Neovi, a prefab home construction company. Draft a short, professional email about this action item.
+  const prompt = `Draft a very brief email about this construction project action item.
 
-Project: ${projectName} (${projectType})
+Project: ${projectName}
 Action item: ${note}
-Recipient: ${owner || 'Team member'}
+To: ${owner || 'Team'}
 
-Write a concise email (3-5 sentences) that:
-- Has a clear subject line
-- States what's needed
-- Is friendly but direct
-- Signs off as the Neovi PM team
+Rules:
+- 1-2 sentences max, no fluff
+- Direct and casual-professional (like a quick Slack message but in email form)
+- No "I hope this finds you well" or filler
+- Short subject line (under 8 words)
+- Sign off with just "Thanks" or "Thanks," and a dash and "Neovi PM"
 
-Respond in this exact JSON format:
-{"subject": "...", "body": "..."}`;
+Respond as JSON only, no markdown: {"subject": "...", "body": "..."}`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
