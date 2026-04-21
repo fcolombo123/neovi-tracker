@@ -284,7 +284,7 @@ export default function DetailPanel({ projectId, canEdit, onBack, isDrilldown, o
           </div>
         </div>
 
-        <ProductionTracker projectName={p.name} />
+        <ProductionTracker projectName={p.name} phases={p.phases} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
           <div className="sec-lbl" style={{ marginBottom: 0 }}>Phases</div>

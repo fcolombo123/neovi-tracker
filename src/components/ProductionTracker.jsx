@@ -45,7 +45,47 @@ function PhaseSchedule({ label, start, end, pct }) {
   );
 }
 
-export default function ProductionTracker({ projectName }) {
+function StatusRow({ label, sheetStatus, sheetPct, phases, phaseNames }) {
+  // Find matching phase and count tasks
+  const phase = phases.find(ph => phaseNames.some(n => ph.name === n));
+  const tasks = phase ? (phase.tasks || []).flatMap(t => t.isGroup ? (t.tasks || []) : [t]) : [];
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pctNum = sheetPct ? Math.round(parseFloat(sheetPct) * 100) : 0;
+  const isDone = sheetStatus === 'Complete' || sheetStatus === 'Approved' || pctNum === 100;
+  const hasMismatch = isDone && total > 0 && done < total;
+  const isPartial = !isDone && pctNum > 0;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0',
+      borderBottom: '0.5px solid var(--border)',
+    }}>
+      <div style={{
+        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+        background: isDone ? 'var(--green)' : isPartial ? 'var(--accent)' : 'var(--bg3)',
+        border: isDone ? 'none' : '1px solid var(--border2)',
+      }}></div>
+      <div style={{ flex: 1, fontSize: '12px' }}>{label}</div>
+      <div style={{ fontSize: '10px', color: isDone ? 'var(--green-text)' : isPartial ? 'var(--accent-dark)' : 'var(--text3)', fontWeight: 500 }}>
+        {sheetStatus || '—'}
+      </div>
+      <div style={{ fontSize: '10px', color: 'var(--text3)', width: '32px', textAlign: 'right' }}>
+        {pctNum}%
+      </div>
+      {hasMismatch && (
+        <span style={{
+          fontSize: '9px', background: 'var(--amber-bg)', color: 'var(--amber-text)',
+          padding: '1px 5px', borderRadius: '3px', fontWeight: 600, flexShrink: 0,
+        }}>
+          {total - done} task{total - done > 1 ? 's' : ''} unchecked
+        </span>
+      )}
+    </div>
+  );
+}
+
+export default function ProductionTracker({ projectName, phases }) {
   const [syncData, setSyncData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -113,6 +153,22 @@ export default function ProductionTracker({ projectName }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Design & Permitting Status */}
+      {(s.floor_plan_status || s.engineering_status || s.state_permitting_status || s.city_permitting_status) && (
+        <div style={{
+          background: 'var(--bg2)', borderRadius: 'var(--r)', padding: '10px 12px',
+          marginBottom: '8px', border: '0.5px solid var(--border)',
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '6px' }}>
+            Design & Permitting Status
+          </div>
+          <StatusRow label="Floor Plan" sheetStatus={s.floor_plan_status} sheetPct={s.floor_plan_pct} phases={phases || []} phaseNames={['Schematic Design']} />
+          <StatusRow label="Engineering" sheetStatus={s.engineering_status} sheetPct={s.engineering_pct} phases={phases || []} phaseNames={['Design Development']} />
+          <StatusRow label="State Permitting (ICC/NTA)" sheetStatus={s.state_permitting_status} sheetPct={s.state_permitting_pct} phases={phases || []} phaseNames={['Design Development']} />
+          <StatusRow label="City Permitting" sheetStatus={s.city_permitting_status} sheetPct={s.city_permitting_pct} phases={phases || []} phaseNames={['Municipal Permitting']} />
         </div>
       )}
 
