@@ -39,7 +39,10 @@ Respond in this exact JSON format:
   }
 
   const data = await response.json();
-  const text = data.content[0].text;
+  let text = data.content[0].text.trim();
+
+  // Strip markdown code fences if present
+  text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
   try {
     return JSON.parse(text);
